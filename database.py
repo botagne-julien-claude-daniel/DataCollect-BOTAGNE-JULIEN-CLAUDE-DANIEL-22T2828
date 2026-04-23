@@ -60,6 +60,79 @@ _PG_TYPE_MAP: dict[str, str] = {
 }
 
 
+def ensure_schemas_table(conn) -> None:
+    """Crée la table _schemas si elle n'existe pas.
+
+    Cette table stocke les schémas créés via l'onglet Admin.
+
+    Args:
+        conn: Connexion psycopg2 active.
+    """
+    ddl = """
+    CREATE TABLE IF NOT EXISTS _schemas (
+        id SERIAL PRIMARY KEY,
+        domain TEXT UNIQUE NOT NULL,
+        schema_json TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+    );
+    """
+    with transaction(conn) as cur:
+        cur.execute(ddl)
+    logger.debug("Table _schemas assurée.")
+
+
+def save_schema_db(conn, domain: str, schema: dict) -> None:
+    """Sauvegarde un schéma dans la table _schemas de Supabase.
+
+    Args:
+        conn: Connexion psycopg2 active.
+        domain: Nom du domaine (identifiant unique).
+        schema: Dictionnaire du schéma à sauvegarder.
+    """
+    import json
+    schema_json = json.dumps(schema, ensure_ascii=False)
+    sql = """
+    INSERT INTO _schemas (domain, schema_json)
+    VALUES (%s, %s)
+    ON CONFLICT (domain) DO UPDATE SET schema_json = EXCLUDED.schema_json;
+    """
+    with transaction(conn) as cur:
+        cur.execute(sql, (domain, schema_json))
+    logger.info("Schéma sauvegardé en DB : %s", domain)
+
+
+def load_schemas_db(conn) -> dict[str, dict]:
+    """Charge tous les schémas depuis la table _schemas.
+
+    Args:
+        conn: Connexion psycopg2 active.
+
+    Returns:
+        Dictionnaire {domain: schema_dict}.
+    """
+    import json
+    try:
+        with transaction(conn) as cur:
+            cur.execute("SELECT domain, schema_json FROM _schemas ORDER BY domain;")
+            rows = cur.fetchall()
+            return {row["domain"]: json.loads(row["schema_json"]) for row in rows}
+    except Exception as exc:
+        logger.warning("load_schemas_db : %s", exc)
+        return {}
+
+
+def delete_schema_db(conn, domain: str) -> None:
+    """Supprime un schéma de la table _schemas.
+
+    Args:
+        conn: Connexion psycopg2 active.
+        domain: Nom du domaine à supprimer.
+    """
+    with transaction(conn) as cur:
+        cur.execute("DELETE FROM _schemas WHERE domain = %s;", (domain,))
+    logger.info("Schéma supprimé : %s", domain)
+
+
 def ensure_table(conn, table_name: str, fields: list[dict]) -> None:
     """Crée la table PostgreSQL si elle n'existe pas.
 
@@ -96,7 +169,6 @@ def insert_row(conn, table_name: str, data: dict[str, Any]) -> int:
     cols = ", ".join(f'"{c}"' for c in data)
     placeholders = ", ".join("%s" for _ in data)
     sql = f'INSERT INTO "{table_name}" ({cols}) VALUES ({placeholders}) RETURNING id'
-
     with transaction(conn) as cur:
         cur.execute(sql, list(data.values()))
         row = cur.fetchone()
