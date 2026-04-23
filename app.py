@@ -167,14 +167,17 @@ def render_field(field: dict) -> Any:
         value = st.selectbox(full_label, display_options, help=help_text)
         return None if value == "— Sélectionner —" else value
 
-    if field_type == "int":
-        return st.number_input(
-            full_label,
-            step=1,
-            value=field.get("default", 0),
-            min_value=field.get("min_value"),
-            max_value=field.get("max_value"),
-            help=help_text,
+    iif field_type == "int":
+    min_val = field.get("min_value")
+    default_val = field.get("default", min_val if min_val is not None else 0)
+    return st.number_input(
+        full_label,
+        step=1,
+        value=default_val,
+        min_value=min_val,
+        max_value=field.get("max_value"),
+        help=help_text,
+    )
         )
 
     if field_type == "float":
