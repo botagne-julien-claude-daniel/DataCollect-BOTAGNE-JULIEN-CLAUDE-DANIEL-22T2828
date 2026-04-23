@@ -8,19 +8,25 @@ Run: ``streamlit run app.py``
 from __future__ import annotations
 
 import io
-import json
 import logging
 import traceback
 from datetime import date, datetime
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import streamlit as st
 
-from database import ensure_table, fetch_all, get_connection, insert_row
+from database import (
+    delete_schema_db,
+    ensure_schemas_table,
+    ensure_table,
+    fetch_all,
+    get_connection,
+    insert_row,
+    load_schemas_db,
+    save_schema_db,
+)
 from models import build_model, validate_data
-from schema_loader import list_schemas, load_schema
 
 logging.basicConfig(
     level=logging.INFO,
@@ -123,22 +129,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-SCHEMAS_DIR = Path("schemas")
-
-
-def save_schema_file(domain: str, schema: dict) -> None:
-    """Sauvegarde un schéma JSON dans le dossier schemas/.
-
-    Args:
-        domain: Nom du domaine.
-        schema: Dictionnaire du schéma.
-    """
-    SCHEMAS_DIR.mkdir(parents=True, exist_ok=True)
-    path = SCHEMAS_DIR / f"{domain}.json"
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(schema, f, ensure_ascii=False, indent=2)
-    load_schema.clear()
-
 
 def render_field(field: dict) -> Any:
     """Génère le widget Streamlit approprié pour un champ du schéma.
@@ -211,12 +201,8 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
     categoric_fields = [f for f in schema_fields if f.get("options") or f.get("type") == "str"]
     numeric_cols = [f["name"] for f in numeric_fields]
 
-    # ----------------------------------------------------------------
-    # KPIs généraux
-    # ----------------------------------------------------------------
     st.markdown("### 📊 Vue générale")
     col1, col2, col3, col4 = st.columns(4)
-
     with col1:
         st.markdown(
             f'<div class="metric-box"><div class="value">{len(df)}</div>'
@@ -238,7 +224,9 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
             unsafe_allow_html=True,
         )
     with col4:
-        completeness = round((df.notna().sum().sum() / (len(df) * len(df.columns))) * 100, 1)
+        completeness = round(
+            (df.notna().sum().sum() / (len(df) * len(df.columns))) * 100, 1
+        )
         st.markdown(
             f'<div class="metric-box"><div class="value">{completeness}%</div>'
             f'<div class="label">Complétude</div></div>',
@@ -247,12 +235,8 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
 
     st.markdown("---")
 
-    # ----------------------------------------------------------------
-    # FILTRES
-    # ----------------------------------------------------------------
     st.markdown("### 🔍 Filtres")
     df_filtered = df.copy()
-
     filter_cols = st.columns(min(len(categoric_fields), 3)) if categoric_fields else []
     for i, field in enumerate(categoric_fields[:3]):
         name = field["name"]
@@ -271,16 +255,10 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
                         df_filtered = df_filtered[df_filtered[name].isin(selected)]
 
     st.caption(f"**{len(df_filtered)}** enregistrements après filtrage sur **{len(df)}** total.")
-
     st.markdown("---")
 
-    # ----------------------------------------------------------------
-    # ANALYSE NUMERIQUE
-    # ----------------------------------------------------------------
     if numeric_cols:
         st.markdown("### 🔢 Analyse numérique")
-
-        # Tableau des statistiques descriptives
         num_df = df_filtered[numeric_cols].apply(pd.to_numeric, errors="coerce")
         stats = num_df.describe().T
         stats.index = [
@@ -289,10 +267,8 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
         ]
         stats.columns = ["Nb", "Moyenne", "Écart-type", "Min", "Q25%", "Médiane", "Q75%", "Max"]
         st.dataframe(stats.round(2), use_container_width=True)
-
         st.markdown("---")
 
-        # Distributions individuelles
         st.markdown("### 📈 Distributions")
         dist_cols = st.columns(min(len(numeric_cols), 2))
         for i, field in enumerate(numeric_fields):
@@ -303,20 +279,18 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
                 if not series.empty:
                     with dist_cols[i % 2]:
                         st.markdown(f"**{label}**")
-                        hist = series.value_counts(bins=min(10, len(series.unique()))).sort_index()
+                        hist = series.value_counts(
+                            bins=min(10, len(series.unique()))
+                        ).sort_index()
                         st.bar_chart(hist)
-                        col_a, col_b, col_c = st.columns(3)
-                        col_a.metric("Moyenne", f"{series.mean():.2f}")
-                        col_b.metric("Médiane", f"{series.median():.2f}")
-                        col_c.metric("Écart-type", f"{series.std():.2f}")
-
+                        ca, cb, cc = st.columns(3)
+                        ca.metric("Moyenne", f"{series.mean():.2f}")
+                        cb.metric("Médiane", f"{series.median():.2f}")
+                        cc.metric("Écart-type", f"{series.std():.2f}")
         st.markdown("---")
 
-        # Tableau croisé
         if len(numeric_cols) >= 1 and categoric_fields:
             st.markdown("### 🔀 Tableau croisé")
-            st.caption("Moyenne d'une variable numérique selon une catégorie.")
-
             col_x, col_y = st.columns(2)
             with col_x:
                 selected_num = st.selectbox(
@@ -336,7 +310,6 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
                     ),
                     key="crosstab_cat"
                 )
-
             if selected_num and selected_cat:
                 cross = (
                     df_filtered.groupby(selected_cat)[selected_num]
@@ -355,25 +328,21 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
                 cross.columns = [cat_label, f"Moyenne {num_label}"]
                 st.dataframe(cross, use_container_width=True, hide_index=True)
                 st.bar_chart(cross.set_index(cat_label))
-
         st.markdown("---")
 
-        # Corrélations
         if len(numeric_cols) >= 2:
-            st.markdown("### 🔗 Corrélations entre variables numériques")
-            st.caption("Valeur proche de 1 = forte relation positive, proche de -1 = forte relation inverse.")
+            st.markdown("### 🔗 Corrélations")
             corr_df = num_df.rename(columns={
                 f["name"]: f.get("label", f["name"]) for f in numeric_fields
             })
             corr = corr_df.corr().round(2)
-            st.dataframe(corr.style.background_gradient(cmap="RdYlGn", vmin=-1, vmax=1),
-                        use_container_width=True)
+            st.dataframe(
+                corr.style.background_gradient(cmap="RdYlGn", vmin=-1, vmax=1),
+                use_container_width=True
+            )
 
     st.markdown("---")
 
-    # ----------------------------------------------------------------
-    # ANALYSE CATEGORIELLE
-    # ----------------------------------------------------------------
     if categoric_fields:
         st.markdown("### 🏷️ Répartitions catégorielles")
         for field in categoric_fields:
@@ -382,24 +351,25 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
             if name in df_filtered.columns:
                 counts = df_filtered[name].value_counts().reset_index()
                 counts.columns = [label, "Nombre"]
-                counts["Pourcentage"] = (counts["Nombre"] / counts["Nombre"].sum() * 100).round(1)
-                col_a, col_b = st.columns([1, 1])
+                counts["Pourcentage"] = (
+                    counts["Nombre"] / counts["Nombre"].sum() * 100
+                ).round(1)
+                col_a, col_b = st.columns(2)
                 with col_a:
                     st.markdown(f"**{label}**")
                     st.dataframe(counts, use_container_width=True, hide_index=True)
                 with col_b:
-                    st.markdown(f"&nbsp;")
+                    st.markdown("&nbsp;")
                     st.bar_chart(counts.set_index(label)["Nombre"])
 
     st.markdown("---")
 
-    # ----------------------------------------------------------------
-    # EVOLUTION TEMPORELLE
-    # ----------------------------------------------------------------
     if "created_at" in df_filtered.columns:
-        st.markdown("### 📅 Évolution des saisies dans le temps")
+        st.markdown("### 📅 Évolution des saisies")
         df_filtered["created_at"] = pd.to_datetime(df_filtered["created_at"])
-        daily = df_filtered.groupby(df_filtered["created_at"].dt.date).size().reset_index()
+        daily = df_filtered.groupby(
+            df_filtered["created_at"].dt.date
+        ).size().reset_index()
         daily.columns = ["Date", "Saisies"]
         st.line_chart(daily.set_index("Date"))
 
@@ -413,7 +383,6 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_name = f"{domain}_{timestamp}"
-
     col1, col2 = st.columns(2)
     with col1:
         csv_bytes = df.to_csv(index=False).encode("utf-8-sig")
@@ -435,58 +404,53 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
-def render_admin_tab() -> None:
-    """Affiche l'onglet Admin pour créer un nouveau formulaire sans code."""
 
+
+def render_admin_tab(conn) -> None:
+    """Affiche l'onglet Admin pour créer et gérer les formulaires.
+
+    Args:
+        conn: Connexion psycopg2 active.
+    """
     st.markdown("## ⚙️ Créer un nouveau formulaire")
-    st.caption("Remplis ce formulaire pour créer un nouveau questionnaire. Aucune connaissance technique requise.")
+    st.caption("Aucune connaissance technique requise.")
     st.markdown("---")
 
     st.markdown("### 1️⃣ Informations générales")
     form_title = st.text_input("Titre du formulaire *", placeholder="Ex : Enquête de satisfaction")
-    form_description = st.text_area("Description (optionnel)", placeholder="Ex : Collecte des avis étudiants")
+    form_description = st.text_area("Description (optionnel)", placeholder="Ex : Collecte des avis")
     domain_name = st.text_input(
         "Nom interne (sans espaces ni accents) *",
         placeholder="Ex : enquete_etudiants",
-        help="Utilisez uniquement des lettres, chiffres et underscores."
+        help="Lettres, chiffres et underscores uniquement."
     )
 
     st.markdown("---")
     st.markdown("### 2️⃣ Champs du formulaire")
-    st.caption("Ajoute autant de champs que tu veux.")
-
-    nb_fields = st.number_input("Combien de champs veux-tu ?", min_value=1, max_value=20, value=3, step=1)
+    nb_fields = st.number_input("Combien de champs ?", min_value=1, max_value=20, value=3, step=1)
 
     fields = []
     for i in range(int(nb_fields)):
         st.markdown(f"**Champ {i + 1}**")
         col1, col2 = st.columns(2)
-
         with col1:
-            field_label = st.text_input(f"Libellé *", placeholder="Ex : Nom", key=f"label_{i}")
-            field_name = st.text_input(f"Nom interne *", placeholder="Ex : nom", key=f"name_{i}")
+            field_label = st.text_input("Libellé *", placeholder="Ex : Nom", key=f"label_{i}")
+            field_name = st.text_input("Nom interne *", placeholder="Ex : nom", key=f"name_{i}")
             field_type = st.selectbox(
-                f"Type",
+                "Type",
                 ["Texte", "Nombre entier", "Nombre décimal", "Date", "Liste déroulante"],
                 key=f"type_{i}"
             )
-
         with col2:
             field_required = st.checkbox("Obligatoire", value=True, key=f"required_{i}")
-            field_help = st.text_input(
-                "Texte d'aide (optionnel)",
-                placeholder="Ex : Entrez votre prénom",
-                key=f"help_{i}"
-            )
-
+            field_help = st.text_input("Texte d'aide", placeholder="Optionnel", key=f"help_{i}")
             field_options = ""
             field_min = None
             field_max = None
-
             if field_type == "Liste déroulante":
                 field_options = st.text_input(
-                    "Options (séparées par des virgules) *",
-                    placeholder="Ex : Oui, Non, Peut-être",
+                    "Options (séparées par virgules) *",
+                    placeholder="Ex : Oui, Non",
                     key=f"options_{i}"
                 )
             elif field_type in ("Nombre entier", "Nombre décimal"):
@@ -494,20 +458,15 @@ def render_admin_tab() -> None:
                 field_max = st.number_input("Valeur maximum", value=100, key=f"max_{i}")
 
         type_map = {
-            "Texte": "str",
-            "Nombre entier": "int",
-            "Nombre décimal": "float",
-            "Date": "date",
-            "Liste déroulante": "str",
+            "Texte": "str", "Nombre entier": "int",
+            "Nombre décimal": "float", "Date": "date", "Liste déroulante": "str",
         }
-
         field_dict: dict[str, Any] = {
             "name": field_name.strip().replace(" ", "_"),
             "label": field_label.strip(),
             "type": type_map[field_type],
             "required": field_required,
         }
-
         if field_help:
             field_dict["help"] = field_help
         if field_type == "Liste déroulante" and field_options:
@@ -515,7 +474,6 @@ def render_admin_tab() -> None:
         if field_type in ("Nombre entier", "Nombre décimal") and field_min is not None:
             field_dict["min_value"] = field_min
             field_dict["max_value"] = field_max
-
         fields.append(field_dict)
         st.markdown("---")
 
@@ -526,13 +484,12 @@ def render_admin_tab() -> None:
         if not domain_name.strip():
             errors.append("Le nom interne est obligatoire.")
         if not domain_name.strip().replace("_", "").isalnum():
-            errors.append("Le nom interne ne doit contenir que des lettres, chiffres et underscores.")
+            errors.append("Nom interne : lettres, chiffres et underscores uniquement.")
         for i, f in enumerate(fields):
             if not f.get("label"):
-                errors.append(f"Le libellé du champ {i + 1} est obligatoire.")
+                errors.append(f"Libellé du champ {i + 1} obligatoire.")
             if not f.get("name"):
-                errors.append(f"Le nom interne du champ {i + 1} est obligatoire.")
-
+                errors.append(f"Nom interne du champ {i + 1} obligatoire.")
         if errors:
             for err in errors:
                 st.error(f"❌ {err}")
@@ -543,11 +500,27 @@ def render_admin_tab() -> None:
                 "fields": [f for f in fields if f.get("name") and f.get("label")],
             }
             try:
-                save_schema_file(domain_name.strip(), schema)
-                st.success(f"✅ Formulaire **{form_title}** créé ! Sélectionne-le dans la sidebar.")
+                save_schema_db(conn, domain_name.strip(), schema)
+                st.success(f"✅ Formulaire **{form_title}** créé et sauvegardé ! Sélectionne-le dans la sidebar.")
                 st.balloons()
+                st.rerun()
             except Exception as exc:
                 st.error(f"❌ Erreur : {exc}")
+
+    st.markdown("---")
+    st.markdown("### 🗑️ Supprimer un formulaire")
+    schemas = load_schemas_db(conn)
+    if schemas:
+        to_delete = st.selectbox("Choisir le formulaire à supprimer", list(schemas.keys()))
+        if st.button("🗑️ Supprimer", use_container_width=True):
+            try:
+                delete_schema_db(conn, to_delete)
+                st.success(f"✅ Formulaire **{to_delete}** supprimé.")
+                st.rerun()
+            except Exception as exc:
+                st.error(f"❌ Erreur : {exc}")
+    else:
+        st.info("Aucun formulaire à supprimer.")
 
 
 def main() -> None:
@@ -559,17 +532,28 @@ def main() -> None:
     )
     st.markdown(
         "<p style='color:#888;font-size:0.8rem;letter-spacing:0.06em;'>"
-        "MOTEUR DE COLLECTE DE DONNÉES PILOTÉ PAR SCHÉMA — RÉALISÉ PAR BOTAGNE JULIEN CLAUDE DANIEL"
+        "MOTEUR DE COLLECTE DE DONNÉES — RÉALISÉ PAR BOTAGNE JULIEN CLAUDE DANIEL"
         "</p>",
         unsafe_allow_html=True,
     )
     st.markdown("---")
 
+    # Connexion DB
+    try:
+        conn = get_connection()
+        ensure_schemas_table(conn)
+    except Exception as exc:
+        st.error(f"❌ Erreur de connexion : {exc}")
+        st.stop()
+
+    # Chargement des schémas depuis Supabase
+    schemas_db = load_schemas_db(conn)
+
     with st.sidebar:
         st.markdown("### ⚙️ Configuration")
-        available = list_schemas()
+        available = list(schemas_db.keys())
         if not available:
-            st.warning("Aucun formulaire. Crées-en un dans l'onglet Admin.")
+            st.warning("Aucun formulaire. Crées-en un dans l'onglet **Admin**.")
             domain = None
         else:
             domain = st.selectbox("Formulaire actif", available)
@@ -580,7 +564,7 @@ def main() -> None:
     ])
 
     with tab_admin:
-        render_admin_tab()
+        render_admin_tab(conn)
 
     if not domain:
         with tab_form:
@@ -591,18 +575,12 @@ def main() -> None:
             st.info("👆 Crée d'abord un formulaire dans l'onglet Admin.")
         return
 
-    try:
-        schema = load_schema(domain)
-    except Exception as exc:
-        st.error(f"❌ Impossible de charger le schéma : {exc}")
-        st.stop()
-
+    schema = schemas_db[domain]
     schema_fields: list[dict] = schema.get("fields", [])
     form_title: str = schema.get("title", domain.replace("_", " ").title())
     form_description: str = schema.get("description", "")
 
     try:
-        conn = get_connection()
         ensure_table(conn, domain, schema_fields)
     except Exception as exc:
         st.error(f"❌ Erreur de base de données : {exc}")
@@ -630,7 +608,7 @@ def main() -> None:
             try:
                 instance, errors = validate_data(model_cls, raw_values)
                 if errors:
-                    st.error("❌ Corrigez les erreurs suivantes :")
+                    st.error("❌ Corrigez les erreurs :")
                     for err in errors:
                         st.markdown(f"• {err}")
                 else:
