@@ -1,0 +1,75 @@
+{
+  "title": "Enquête Satisfaction Client",
+  "description": "Collecte de données post-achat — version démo universelle.",
+  "fields": [
+    {
+      "name": "prenom",
+      "label": "Prénom",
+      "type": "str",
+      "required": true,
+      "help": "Prénom du répondant"
+    },
+    {
+      "name": "age",
+      "label": "Âge",
+      "type": "int",
+      "required": true,
+      "min_value": 18,
+      "max_value": 120,
+      "help": "Âge en années"
+    },
+    {
+      "name": "categorie_produit",
+      "label": "Catégorie de produit",
+      "type": "str",
+      "required": true,
+      "options": ["Électronique", "Vêtements", "Alimentation", "Livres", "Sport"],
+      "help": "Sélectionnez la catégorie principale"
+    },
+    {
+      "name": "note_satisfaction",
+      "label": "Note de satisfaction (1–10)",
+      "type": "int",
+      "required": true,
+      "min_value": 1,
+      "max_value": 10
+    },
+    {
+      "name": "montant_achat",
+      "label": "Montant de l'achat (€)",
+      "type": "float",
+      "required": false,
+      "min_value": 0.0,
+      "step": 0.01,
+      "help": "Optionnel — montant en euros"
+    },
+    {
+      "name": "canal_achat",
+      "label": "Canal d'achat",
+      "type": "str",
+      "required": true,
+      "options": ["En ligne", "Magasin physique", "Application mobile", "Téléphone"]
+    },
+    {
+      "name": "date_achat",
+      "label": "Date d'achat",
+      "type": "date",
+      "required": true
+    },
+    {
+      "name": "recommanderait",
+      "label": "Recommanderait à un ami ?",
+      "type": "str",
+      "required": true,
+      "options": ["Oui", "Non", "Peut-être"]
+    },
+    {
+      "name": "commentaire",
+      "label": "Commentaire libre",
+      "type": "str",
+      "required": false,
+      "multiline": true,
+      "help": "Vos remarques supplémentaires (optionnel)"
+    }
+  ]
+}
