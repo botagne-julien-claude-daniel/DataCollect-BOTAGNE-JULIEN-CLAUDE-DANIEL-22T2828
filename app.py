@@ -1,9 +1,6 @@
 """
 app.py - Point d'entrée de l'application Streamlit.
-
-Moteur universel de collecte de données piloté par des fichiers de schéma
-JSON/YAML. L'interface est entièrement générée à la volée.
-
+Moteur universel de collecte de données piloté par schéma.
 Google Style Docstrings.
 Run: ``streamlit run app.py``
 """
@@ -11,9 +8,11 @@ Run: ``streamlit run app.py``
 from __future__ import annotations
 
 import io
+import json
 import logging
 import traceback
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -22,10 +21,6 @@ import streamlit as st
 from database import ensure_table, fetch_all, get_connection, insert_row
 from models import build_model, validate_data
 from schema_loader import list_schemas, load_schema
-
-# ---------------------------------------------------------------------------
-# Configuration globale
-# ---------------------------------------------------------------------------
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,15 +35,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------------------------------------------------------------------------
-# CSS personnalisé — palette sombre industrielle / typographie éditoriale
-# ---------------------------------------------------------------------------
-
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&display=swap');
-
     html, body, [class*="css"] {
         font-family: 'Space Mono', monospace;
         background-color: #0f0f0f;
@@ -90,11 +80,6 @@ st.markdown(
     .stButton > button:hover {
         background: #ffd966;
         color: #0f0f0f;
-    }
-    .stSelectbox > div > div, .stTextInput > div > div {
-        background: #1a1a1a;
-        border-color: #333;
-        color: #e8e4dc;
     }
     .stForm {
         background: #141414;
@@ -138,18 +123,38 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+SCHEMAS_DIR = Path("schemas")
 
-# ---------------------------------------------------------------------------
-# Fonctions utilitaires UI
-# ---------------------------------------------------------------------------
+
+def save_schema_file(domain: str, schema: dict) -> None:
+    """Sauvegarde un schéma JSON dans le dossier schemas/.
+
+    Args:
+        domain: Nom du domaine (nom du fichier sans extension).
+        schema: Dictionnaire du schéma à sauvegarder.
+    """
+    SCHEMAS_DIR.mkdir(parents=True, exist_ok=True)
+    path = SCHEMAS_DIR / f"{domain}.json"
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(schema, f, ensure_ascii=False, indent=2)
+    load_schema.clear()
+
+
 def render_field(field: dict) -> Any:
+    """Génère le widget Streamlit approprié pour un champ du schéma.
+
+    Args:
+        field: Dictionnaire décrivant un champ.
+
+    Returns:
+        La valeur saisie par l'utilisateur.
+    """
     label: str = field.get("label", field["name"])
     field_type: str = field.get("type", "str")
     help_text: str | None = field.get("help")
     required: bool = field.get("required", True)
     suffix = " *" if required else " (optionnel)"
     full_label = f"{label}{suffix}"
-
     options: list | None = field.get("options")
 
     if options:
@@ -184,8 +189,7 @@ def render_field(field: dict) -> Any:
         )
 
     if field_type == "date":
-        default_date = date.today()
-        return st.date_input(full_label, value=default_date, help=help_text)
+        return st.date_input(full_label, value=date.today(), help=help_text)
 
     if field.get("multiline"):
         return st.text_area(full_label, value=field.get("default", ""), help=help_text)
@@ -193,17 +197,16 @@ def render_field(field: dict) -> Any:
 
 
 def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
-    """Affiche un dashboard statistique pour les données collectées.
+    """Affiche un dashboard statistique.
 
     Args:
-        df: DataFrame pandas chargé depuis SQLite.
-        schema_fields: Liste des champs du schéma (pour typer les colonnes).
+        df: DataFrame pandas chargé depuis la base de données.
+        schema_fields: Liste des champs du schéma.
     """
     if df.empty:
         st.info("📭 Aucune donnée collectée pour l'instant.")
         return
 
-    # KPIs généraux
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown(
@@ -220,19 +223,15 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
                 unsafe_allow_html=True,
             )
     with col3:
-        numeric_cols = [
-            f["name"] for f in schema_fields if f.get("type") in ("int", "float")
-        ]
-        count_text = f"{len(numeric_cols)} num."
+        numeric_cols = [f["name"] for f in schema_fields if f.get("type") in ("int", "float")]
         st.markdown(
-            f'<div class="metric-box"><div class="value">{count_text}</div>'
+            f'<div class="metric-box"><div class="value">{len(numeric_cols)} num.</div>'
             f'<div class="label">Colonnes numériques</div></div>',
             unsafe_allow_html=True,
         )
 
     st.markdown("---")
 
-    # Graphiques par type de champ
     for field in schema_fields:
         name = field["name"]
         label = field.get("label", name)
@@ -252,8 +251,7 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
             series = pd.to_numeric(df[name], errors="coerce").dropna()
             with col_a:
                 st.markdown(f"**Distribution — {label}**")
-                hist_data = series.value_counts().sort_index()
-                st.bar_chart(hist_data)
+                st.bar_chart(series.value_counts().sort_index())
             with col_b:
                 st.markdown(f"**Statistiques — {label}**")
                 st.dataframe(
@@ -267,14 +265,14 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
 
     Args:
         df: DataFrame à exporter.
-        domain: Nom du domaine (utilisé dans le nom du fichier horodaté).
+        domain: Nom du domaine pour le nom du fichier.
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_name = f"{domain}_{timestamp}"
 
     col1, col2 = st.columns(2)
     with col1:
-        csv_bytes = df.to_csv(index=False).encode("utf-8-sig")  # BOM pour Excel FR
+        csv_bytes = df.to_csv(index=False).encode("utf-8-sig")
         st.download_button(
             label="⬇ Exporter CSV",
             data=csv_bytes,
@@ -295,86 +293,221 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
         )
 
 
-# ---------------------------------------------------------------------------
-# Application principale
-# ---------------------------------------------------------------------------
+def render_admin_tab() -> None:
+    """Affiche l'onglet Admin pour créer un nouveau formulaire sans code."""
+
+    st.markdown("## ⚙️ Créer un nouveau formulaire")
+    st.caption("Remplis ce formulaire pour créer un nouveau questionnaire. Aucune connaissance technique requise.")
+
+    st.markdown("---")
+
+    # --- Infos générales du formulaire ---
+    st.markdown("### 1️⃣ Informations générales")
+    form_title = st.text_input("Titre du formulaire *", placeholder="Ex : Enquête de satisfaction")
+    form_description = st.text_area("Description (optionnel)", placeholder="Ex : Collecte des avis étudiants")
+    domain_name = st.text_input(
+        "Nom interne (sans espaces ni accents) *",
+        placeholder="Ex : enquete_etudiants",
+        help="Ce nom sera utilisé comme identifiant. Utilisez uniquement des lettres, chiffres et underscores."
+    )
+
+    st.markdown("---")
+    st.markdown("### 2️⃣ Champs du formulaire")
+    st.caption("Ajoute autant de champs que tu veux.")
+
+    # Nombre de champs
+    nb_fields = st.number_input("Combien de champs veux-tu ?", min_value=1, max_value=20, value=3, step=1)
+
+    fields = []
+    for i in range(int(nb_fields)):
+        st.markdown(f"**Champ {i + 1}**")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            field_label = st.text_input(
+                f"Libellé du champ {i + 1} *",
+                placeholder="Ex : Nom de l'étudiant",
+                key=f"label_{i}"
+            )
+            field_name = st.text_input(
+                f"Nom interne {i + 1} *",
+                placeholder="Ex : nom_etudiant",
+                key=f"name_{i}"
+            )
+            field_type = st.selectbox(
+                f"Type de donnée {i + 1}",
+                ["Texte", "Nombre entier", "Nombre décimal", "Date", "Liste déroulante"],
+                key=f"type_{i}"
+            )
+
+        with col2:
+            field_required = st.checkbox(f"Obligatoire", value=True, key=f"required_{i}")
+            field_help = st.text_input(
+                f"Texte d'aide (optionnel)",
+                placeholder="Ex : Entrez votre prénom",
+                key=f"help_{i}"
+            )
+
+            field_options = ""
+            field_min = None
+            field_max = None
+
+            if field_type == "Liste déroulante":
+                field_options = st.text_input(
+                    f"Options (séparées par des virgules) *",
+                    placeholder="Ex : Oui, Non, Peut-être",
+                    key=f"options_{i}"
+                )
+            elif field_type in ("Nombre entier", "Nombre décimal"):
+                field_min = st.number_input(f"Valeur minimum", value=0, key=f"min_{i}")
+                field_max = st.number_input(f"Valeur maximum", value=100, key=f"max_{i}")
+
+        # Construction du champ
+        type_map = {
+            "Texte": "str",
+            "Nombre entier": "int",
+            "Nombre décimal": "float",
+            "Date": "date",
+            "Liste déroulante": "str",
+        }
+
+        field_dict: dict[str, Any] = {
+            "name": field_name.strip().replace(" ", "_"),
+            "label": field_label.strip(),
+            "type": type_map[field_type],
+            "required": field_required,
+        }
+
+        if field_help:
+            field_dict["help"] = field_help
+
+        if field_type == "Liste déroulante" and field_options:
+            field_dict["options"] = [o.strip() for o in field_options.split(",") if o.strip()]
+
+        if field_type in ("Nombre entier", "Nombre décimal") and field_min is not None:
+            field_dict["min_value"] = field_min
+            field_dict["max_value"] = field_max
+
+        fields.append(field_dict)
+        st.markdown("---")
+
+    # --- Bouton de création ---
+    if st.button("✅ Créer le formulaire", use_container_width=True):
+        errors = []
+
+        if not form_title.strip():
+            errors.append("Le titre du formulaire est obligatoire.")
+        if not domain_name.strip():
+            errors.append("Le nom interne est obligatoire.")
+        if not domain_name.strip().replace("_", "").isalnum():
+            errors.append("Le nom interne ne doit contenir que des lettres, chiffres et underscores.")
+        for i, f in enumerate(fields):
+            if not f.get("label"):
+                errors.append(f"Le libellé du champ {i + 1} est obligatoire.")
+            if not f.get("name"):
+                errors.append(f"Le nom interne du champ {i + 1} est obligatoire.")
+
+        if errors:
+            for err in errors:
+                st.error(f"❌ {err}")
+        else:
+            schema = {
+                "title": form_title.strip(),
+                "description": form_description.strip(),
+                "fields": [f for f in fields if f.get("name") and f.get("label")],
+            }
+            try:
+                save_schema_file(domain_name.strip(), schema)
+                st.success(f"✅ Formulaire **{form_title}** créé avec succès ! Sélectionne-le dans la sidebar.")
+                st.balloons()
+            except Exception as exc:
+                st.error(f"❌ Erreur lors de la création : {exc}")
+
 
 def main() -> None:
     """Point d'entrée principal de l'application Streamlit."""
 
-    # ---- En-tête ----
     st.markdown(
         "<h1>🗂️ DataCollect <span class='badge'>Universal</span></h1>",
         unsafe_allow_html=True,
     )
     st.markdown(
         "<p style='color:#888;font-size:0.8rem;letter-spacing:0.06em;'>"
-        "MOTEUR DE COLLECTE DE DONNÉES PILOTÉ PAR SCHÉMA — ZÉRO QUESTION CODÉE EN DUR"
+        "MOTEUR DE COLLECTE DE DONNÉES PILOTÉ PAR SCHÉMA — RÉALISÉ PAR BOTAGNE JULIEN CLAUDE DANIEL"
         "</p>",
         unsafe_allow_html=True,
     )
     st.markdown("---")
 
-    # ---- Sélecteur de domaine (sidebar) ----
     with st.sidebar:
         st.markdown("### ⚙️ Configuration")
         available = list_schemas()
 
         if not available:
-            st.error(
-                "Aucun schéma trouvé dans `schemas/`. "
-                "Placez-y au moins un fichier `.json` ou `.yaml`."
+            st.warning("Aucun formulaire disponible. Crées-en un dans l'onglet **Admin**.")
+            domain = None
+        else:
+            domain = st.selectbox(
+                "Formulaire actif",
+                available,
+                help="Choisissez le formulaire à utiliser",
             )
-            st.stop()
-
-        domain = st.selectbox(
-            "Formulaire actif",
-            available,
-            help="Chaque formulaire correspond à un fichier de schéma dans schemas/",
-        )
         st.markdown("---")
-        st.markdown(
-            "<small style='color:#555;'>"
-            "Les schémas sont rechargés automatiquement toutes les 60 s.</small>",
-            unsafe_allow_html=True,
-        )
 
-    # ---- Chargement du schéma (avec gestion d'erreur globale) ----
+    # ====================================================================
+    # ONGLETS
+    # ====================================================================
+    tab_form, tab_data, tab_stats, tab_admin = st.tabs([
+        "✏️  Saisie",
+        "📋  Données",
+        "📊  Statistiques",
+        "⚙️  Admin"
+    ])
+
+    # ------------------------------------------------------------------
+    # ONGLET ADMIN
+    # ------------------------------------------------------------------
+    with tab_admin:
+        render_admin_tab()
+
+    # Si aucun formulaire disponible, on s'arrête ici
+    if not domain:
+        with tab_form:
+            st.info("👆 Crée d'abord un formulaire dans l'onglet **Admin**.")
+        with tab_data:
+            st.info("👆 Crée d'abord un formulaire dans l'onglet **Admin**.")
+        with tab_stats:
+            st.info("👆 Crée d'abord un formulaire dans l'onglet **Admin**.")
+        return
+
+    # Chargement du schéma
     try:
         schema = load_schema(domain)
     except Exception as exc:
         st.error(f"❌ Impossible de charger le schéma `{domain}` : {exc}")
-        logger.exception("Erreur de chargement du schéma")
         st.stop()
 
     schema_fields: list[dict] = schema.get("fields", [])
     form_title: str = schema.get("title", domain.replace("_", " ").title())
     form_description: str = schema.get("description", "")
 
-    # ---- Connexion DB & table ----
+    # Connexion DB
     try:
         conn = get_connection()
         ensure_table(conn, domain, schema_fields)
     except Exception as exc:
         st.error(f"❌ Erreur de base de données : {exc}")
-        logger.exception("Erreur DB")
         st.stop()
 
-    # ---- Modèle Pydantic dynamique ----
+    # Modèle Pydantic
     try:
         model_cls = build_model(schema_fields)
     except Exception as exc:
-        st.error(f"❌ Erreur de construction du modèle de validation : {exc}")
-        logger.exception("Erreur build_model")
+        st.error(f"❌ Erreur de validation : {exc}")
         st.stop()
 
-    # ====================================================================
-    # ONGLETS
-    # ====================================================================
-    tab_form, tab_data, tab_stats = st.tabs(["✏️  Saisie", "📋  Données", "📊  Statistiques"])
-
     # ------------------------------------------------------------------
-    # ONGLET 1 : FORMULAIRE
+    # ONGLET SAISIE
     # ------------------------------------------------------------------
     with tab_form:
         st.markdown(f"## {form_title}")
@@ -383,79 +516,59 @@ def main() -> None:
 
         with st.form(key=f"form_{domain}", clear_on_submit=True):
             raw_values: dict[str, Any] = {}
-
-            # Génération dynamique des widgets
             for field in schema_fields:
                 try:
                     raw_values[field["name"]] = render_field(field)
                 except Exception as exc:
                     st.warning(f"Widget `{field.get('name')}` : {exc}")
-                    logger.warning("Erreur rendu widget : %s", exc)
 
             submitted = st.form_submit_button("✅ Soumettre", use_container_width=True)
 
         if submitted:
             try:
-                # Validation Pydantic
                 instance, errors = validate_data(model_cls, raw_values)
-
                 if errors:
-                    st.error("❌ **Erreurs de validation — corrigez les champs suivants :**")
+                    st.error("❌ Corrigez les erreurs suivantes :")
                     for err in errors:
-                        st.markdown(f"  • {err}")
+                        st.markdown(f"• {err}")
                 else:
-                    # Persistance SQLite
-                    data_to_save = instance.model_dump()
-                    row_id = insert_row(conn, domain, data_to_save)
-                    st.success(f"✅ Enregistrement #{row_id} sauvegardé avec succès !")
-                    logger.info("Insertion réussie — table=%s id=%s", domain, row_id)
-
+                    row_id = insert_row(conn, domain, instance.model_dump())
+                    st.success(f"✅ Enregistrement #{row_id} sauvegardé !")
             except Exception as exc:
-                st.error(f"❌ Erreur inattendue lors de la soumission : {exc}")
-                with st.expander("Détails techniques"):
+                st.error(f"❌ Erreur : {exc}")
+                with st.expander("Détails"):
                     st.code(traceback.format_exc())
-                logger.exception("Erreur soumission formulaire")
 
     # ------------------------------------------------------------------
-    # ONGLET 2 : DONNÉES BRUTES
+    # ONGLET DONNÉES
     # ------------------------------------------------------------------
     with tab_data:
         st.markdown(f"## Données — *{form_title}*")
         try:
             df = fetch_all(conn, domain)
         except Exception as exc:
-            st.error(f"Erreur de lecture : {exc}")
+            st.error(f"Erreur : {exc}")
             df = pd.DataFrame()
 
         if df.empty:
             st.info("📭 Aucune donnée encore collectée.")
         else:
-            st.markdown(f"`{len(df)}` enregistrement(s) trouvé(s).")
+            st.markdown(f"`{len(df)}` enregistrement(s).")
             st.dataframe(df, use_container_width=True, hide_index=True)
             st.markdown("#### Export")
             export_dataframe(df, domain)
 
     # ------------------------------------------------------------------
-    # ONGLET 3 : STATISTIQUES
+    # ONGLET STATISTIQUES
     # ------------------------------------------------------------------
     with tab_stats:
         st.markdown(f"## Statistiques — *{form_title}*")
         try:
             df_stats = fetch_all(conn, domain)
-        except Exception as exc:
-            st.error(f"Erreur de lecture : {exc}")
-            df_stats = pd.DataFrame()
-
-        try:
             render_statistics(df_stats, schema_fields)
         except Exception as exc:
-            st.error(f"❌ Erreur d'affichage des statistiques : {exc}")
-            logger.exception("Erreur render_statistics")
+            st.error(f"❌ Erreur : {exc}")
 
-
-# ---------------------------------------------------------------------------
-# Lancement
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     main()
