@@ -1,0 +1,68 @@
+{
+  "title": "Fiche d'Admission Patient",
+  "description": "Collecte des informations d'entrée pour un établissement de santé.",
+  "fields": [
+    {
+      "name": "nom",
+      "label": "Nom de famille",
+      "type": "str",
+      "required": true
+    },
+    {
+      "name": "prenom",
+      "label": "Prénom",
+      "type": "str",
+      "required": true
+    },
+    {
+      "name": "date_naissance",
+      "label": "Date de naissance",
+      "type": "date",
+      "required": true
+    },
+    {
+      "name": "sexe",
+      "label": "Sexe",
+      "type": "str",
+      "required": true,
+      "options": ["Masculin", "Féminin", "Non précisé"]
+    },
+    {
+      "name": "poids_kg",
+      "label": "Poids (kg)",
+      "type": "float",
+      "required": false,
+      "min_value": 1.0,
+      "max_value": 300.0,
+      "step": 0.1
+    },
+    {
+      "name": "tension_systolique",
+      "label": "Tension systolique (mmHg)",
+      "type": "int",
+      "required": false,
+      "min_value": 50,
+      "max_value": 250
+    },
+    {
+      "name": "motif_consultation",
+      "label": "Motif de consultation",
+      "type": "str",
+      "required": true,
+      "options": ["Urgence", "Consultation planifiée", "Suivi", "Bilan", "Autre"]
+    },
+    {
+      "name": "antecedents",
+      "label": "Antécédents médicaux",
+      "type": "str",
+      "required": false,
+      "multiline": true
+    },
+    {
+      "name": "medecin_traitant",
+      "label": "Médecin traitant",
+      "type": "str",
+      "required": false
+    }
+  ]
+}
