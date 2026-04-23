@@ -130,8 +130,8 @@ def save_schema_file(domain: str, schema: dict) -> None:
     """Sauvegarde un schéma JSON dans le dossier schemas/.
 
     Args:
-        domain: Nom du domaine (nom du fichier sans extension).
-        schema: Dictionnaire du schéma à sauvegarder.
+        domain: Nom du domaine.
+        schema: Dictionnaire du schéma.
     """
     SCHEMAS_DIR.mkdir(parents=True, exist_ok=True)
     path = SCHEMAS_DIR / f"{domain}.json"
@@ -197,7 +197,7 @@ def render_field(field: dict) -> Any:
 
 
 def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
-    """Affiche un dashboard statistique.
+    """Affiche un dashboard statistique enrichi.
 
     Args:
         df: DataFrame pandas chargé depuis la base de données.
@@ -207,7 +207,16 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
         st.info("📭 Aucune donnée collectée pour l'instant.")
         return
 
-    col1, col2, col3 = st.columns(3)
+    numeric_fields = [f for f in schema_fields if f.get("type") in ("int", "float")]
+    categoric_fields = [f for f in schema_fields if f.get("options") or f.get("type") == "str"]
+    numeric_cols = [f["name"] for f in numeric_fields]
+
+    # ----------------------------------------------------------------
+    # KPIs généraux
+    # ----------------------------------------------------------------
+    st.markdown("### 📊 Vue générale")
+    col1, col2, col3, col4 = st.columns(4)
+
     with col1:
         st.markdown(
             f'<div class="metric-box"><div class="value">{len(df)}</div>'
@@ -223,41 +232,176 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict]) -> None:
                 unsafe_allow_html=True,
             )
     with col3:
-        numeric_cols = [f["name"] for f in schema_fields if f.get("type") in ("int", "float")]
         st.markdown(
-            f'<div class="metric-box"><div class="value">{len(numeric_cols)} num.</div>'
-            f'<div class="label">Colonnes numériques</div></div>',
+            f'<div class="metric-box"><div class="value">{len(numeric_cols)}</div>'
+            f'<div class="label">Champs numériques</div></div>',
+            unsafe_allow_html=True,
+        )
+    with col4:
+        completeness = round((df.notna().sum().sum() / (len(df) * len(df.columns))) * 100, 1)
+        st.markdown(
+            f'<div class="metric-box"><div class="value">{completeness}%</div>'
+            f'<div class="label">Complétude</div></div>',
             unsafe_allow_html=True,
         )
 
     st.markdown("---")
 
-    for field in schema_fields:
+    # ----------------------------------------------------------------
+    # FILTRES
+    # ----------------------------------------------------------------
+    st.markdown("### 🔍 Filtres")
+    df_filtered = df.copy()
+
+    filter_cols = st.columns(min(len(categoric_fields), 3)) if categoric_fields else []
+    for i, field in enumerate(categoric_fields[:3]):
         name = field["name"]
         label = field.get("label", name)
-        ftype = field.get("type", "str")
+        if name in df.columns:
+            unique_vals = df[name].dropna().unique().tolist()
+            if unique_vals:
+                with filter_cols[i]:
+                    selected = st.multiselect(
+                        f"Filtrer par {label}",
+                        options=unique_vals,
+                        default=unique_vals,
+                        key=f"filter_{name}"
+                    )
+                    if selected:
+                        df_filtered = df_filtered[df_filtered[name].isin(selected)]
 
-        if name not in df.columns:
-            continue
+    st.caption(f"**{len(df_filtered)}** enregistrements après filtrage sur **{len(df)}** total.")
 
-        if field.get("options") or ftype == "str":
-            counts = df[name].value_counts().reset_index()
-            counts.columns = [label, "Nombre"]
-            st.markdown(f"**Répartition — {label}**")
-            st.bar_chart(counts.set_index(label))
+    st.markdown("---")
 
-        elif ftype in ("int", "float"):
-            col_a, col_b = st.columns(2)
-            series = pd.to_numeric(df[name], errors="coerce").dropna()
-            with col_a:
-                st.markdown(f"**Distribution — {label}**")
-                st.bar_chart(series.value_counts().sort_index())
-            with col_b:
-                st.markdown(f"**Statistiques — {label}**")
-                st.dataframe(
-                    series.describe().rename("valeur").to_frame(),
-                    use_container_width=True,
+    # ----------------------------------------------------------------
+    # ANALYSE NUMERIQUE
+    # ----------------------------------------------------------------
+    if numeric_cols:
+        st.markdown("### 🔢 Analyse numérique")
+
+        # Tableau des statistiques descriptives
+        num_df = df_filtered[numeric_cols].apply(pd.to_numeric, errors="coerce")
+        stats = num_df.describe().T
+        stats.index = [
+            next((f.get("label", f["name"]) for f in numeric_fields if f["name"] == col), col)
+            for col in stats.index
+        ]
+        stats.columns = ["Nb", "Moyenne", "Écart-type", "Min", "Q25%", "Médiane", "Q75%", "Max"]
+        st.dataframe(stats.round(2), use_container_width=True)
+
+        st.markdown("---")
+
+        # Distributions individuelles
+        st.markdown("### 📈 Distributions")
+        dist_cols = st.columns(min(len(numeric_cols), 2))
+        for i, field in enumerate(numeric_fields):
+            name = field["name"]
+            label = field.get("label", name)
+            if name in df_filtered.columns:
+                series = pd.to_numeric(df_filtered[name], errors="coerce").dropna()
+                if not series.empty:
+                    with dist_cols[i % 2]:
+                        st.markdown(f"**{label}**")
+                        hist = series.value_counts(bins=min(10, len(series.unique()))).sort_index()
+                        st.bar_chart(hist)
+                        col_a, col_b, col_c = st.columns(3)
+                        col_a.metric("Moyenne", f"{series.mean():.2f}")
+                        col_b.metric("Médiane", f"{series.median():.2f}")
+                        col_c.metric("Écart-type", f"{series.std():.2f}")
+
+        st.markdown("---")
+
+        # Tableau croisé
+        if len(numeric_cols) >= 1 and categoric_fields:
+            st.markdown("### 🔀 Tableau croisé")
+            st.caption("Moyenne d'une variable numérique selon une catégorie.")
+
+            col_x, col_y = st.columns(2)
+            with col_x:
+                selected_num = st.selectbox(
+                    "Variable numérique",
+                    options=[f["name"] for f in numeric_fields],
+                    format_func=lambda x: next(
+                        (f.get("label", f["name"]) for f in numeric_fields if f["name"] == x), x
+                    ),
+                    key="crosstab_num"
                 )
+            with col_y:
+                selected_cat = st.selectbox(
+                    "Variable catégorielle",
+                    options=[f["name"] for f in categoric_fields if f["name"] in df_filtered.columns],
+                    format_func=lambda x: next(
+                        (f.get("label", f["name"]) for f in categoric_fields if f["name"] == x), x
+                    ),
+                    key="crosstab_cat"
+                )
+
+            if selected_num and selected_cat:
+                cross = (
+                    df_filtered.groupby(selected_cat)[selected_num]
+                    .apply(lambda s: pd.to_numeric(s, errors="coerce").mean())
+                    .round(2)
+                    .reset_index()
+                )
+                num_label = next(
+                    (f.get("label", f["name"]) for f in numeric_fields if f["name"] == selected_num),
+                    selected_num
+                )
+                cat_label = next(
+                    (f.get("label", f["name"]) for f in categoric_fields if f["name"] == selected_cat),
+                    selected_cat
+                )
+                cross.columns = [cat_label, f"Moyenne {num_label}"]
+                st.dataframe(cross, use_container_width=True, hide_index=True)
+                st.bar_chart(cross.set_index(cat_label))
+
+        st.markdown("---")
+
+        # Corrélations
+        if len(numeric_cols) >= 2:
+            st.markdown("### 🔗 Corrélations entre variables numériques")
+            st.caption("Valeur proche de 1 = forte relation positive, proche de -1 = forte relation inverse.")
+            corr_df = num_df.rename(columns={
+                f["name"]: f.get("label", f["name"]) for f in numeric_fields
+            })
+            corr = corr_df.corr().round(2)
+            st.dataframe(corr.style.background_gradient(cmap="RdYlGn", vmin=-1, vmax=1),
+                        use_container_width=True)
+
+    st.markdown("---")
+
+    # ----------------------------------------------------------------
+    # ANALYSE CATEGORIELLE
+    # ----------------------------------------------------------------
+    if categoric_fields:
+        st.markdown("### 🏷️ Répartitions catégorielles")
+        for field in categoric_fields:
+            name = field["name"]
+            label = field.get("label", name)
+            if name in df_filtered.columns:
+                counts = df_filtered[name].value_counts().reset_index()
+                counts.columns = [label, "Nombre"]
+                counts["Pourcentage"] = (counts["Nombre"] / counts["Nombre"].sum() * 100).round(1)
+                col_a, col_b = st.columns([1, 1])
+                with col_a:
+                    st.markdown(f"**{label}**")
+                    st.dataframe(counts, use_container_width=True, hide_index=True)
+                with col_b:
+                    st.markdown(f"&nbsp;")
+                    st.bar_chart(counts.set_index(label)["Nombre"])
+
+    st.markdown("---")
+
+    # ----------------------------------------------------------------
+    # EVOLUTION TEMPORELLE
+    # ----------------------------------------------------------------
+    if "created_at" in df_filtered.columns:
+        st.markdown("### 📅 Évolution des saisies dans le temps")
+        df_filtered["created_at"] = pd.to_datetime(df_filtered["created_at"])
+        daily = df_filtered.groupby(df_filtered["created_at"].dt.date).size().reset_index()
+        daily.columns = ["Date", "Saisies"]
+        st.line_chart(daily.set_index("Date"))
 
 
 def export_dataframe(df: pd.DataFrame, domain: str) -> None:
@@ -298,24 +442,21 @@ def render_admin_tab() -> None:
 
     st.markdown("## ⚙️ Créer un nouveau formulaire")
     st.caption("Remplis ce formulaire pour créer un nouveau questionnaire. Aucune connaissance technique requise.")
-
     st.markdown("---")
 
-    # --- Infos générales du formulaire ---
     st.markdown("### 1️⃣ Informations générales")
     form_title = st.text_input("Titre du formulaire *", placeholder="Ex : Enquête de satisfaction")
     form_description = st.text_area("Description (optionnel)", placeholder="Ex : Collecte des avis étudiants")
     domain_name = st.text_input(
         "Nom interne (sans espaces ni accents) *",
         placeholder="Ex : enquete_etudiants",
-        help="Ce nom sera utilisé comme identifiant. Utilisez uniquement des lettres, chiffres et underscores."
+        help="Utilisez uniquement des lettres, chiffres et underscores."
     )
 
     st.markdown("---")
     st.markdown("### 2️⃣ Champs du formulaire")
     st.caption("Ajoute autant de champs que tu veux.")
 
-    # Nombre de champs
     nb_fields = st.number_input("Combien de champs veux-tu ?", min_value=1, max_value=20, value=3, step=1)
 
     fields = []
@@ -324,29 +465,17 @@ def render_admin_tab() -> None:
         col1, col2 = st.columns(2)
 
         with col1:
-            field_label = st.text_input(
-                f"Libellé du champ {i + 1} *",
-                placeholder="Ex : Nom de l'étudiant",
-                key=f"label_{i}"
-            )
-            field_name = st.text_input(
-                f"Nom interne {i + 1} *",
-                placeholder="Ex : nom_etudiant",
-                key=f"name_{i}"
-            )
+            field_label = st.text_input(f"Libellé *", placeholder="Ex : Nom", key=f"label_{i}")
+            field_name = st.text_input(f"Nom interne *", placeholder="Ex : nom", key=f"name_{i}")
             field_type = st.selectbox(
-                f"Type de donnée {i + 1}",
+                f"Type",
                 ["Texte", "Nombre entier", "Nombre décimal", "Date", "Liste déroulante"],
                 key=f"type_{i}"
             )
 
         with col2:
-            field_required = st.checkbox(f"Obligatoire", value=True, key=f"required_{i}")
-            field_help = st.text_input(
-                f"Texte d'aide (optionnel)",
-                placeholder="Ex : Entrez votre prénom",
-                key=f"help_{i}"
-            )
+            field_required = st.checkbox("Obligatoire", value=True, key=f"required_{i}")
+            field_help = st.text_input("Texte d'aide (optionnel)", placeholder="Ex : Entrez votre prénom", key=f"help_{i}")
 
             field_options = ""
             field_min = None
@@ -354,15 +483,14 @@ def render_admin_tab() -> None:
 
             if field_type == "Liste déroulante":
                 field_options = st.text_input(
-                    f"Options (séparées par des virgules) *",
+                    "Options (séparées par des virgules) *",
                     placeholder="Ex : Oui, Non, Peut-être",
                     key=f"options_{i}"
                 )
             elif field_type in ("Nombre entier", "Nombre décimal"):
-                field_min = st.number_input(f"Valeur minimum", value=0, key=f"min_{i}")
-                field_max = st.number_input(f"Valeur maximum", value=100, key=f"max_{i}")
+                field_min = st.number_input("Valeur minimum", value=0, key=f"min_{i}")
+                field_max = st.number_input("Valeur maximum", value=100, key=f"max_{i}")
 
-        # Construction du champ
         type_map = {
             "Texte": "str",
             "Nombre entier": "int",
@@ -380,10 +508,8 @@ def render_admin_tab() -> None:
 
         if field_help:
             field_dict["help"] = field_help
-
         if field_type == "Liste déroulante" and field_options:
             field_dict["options"] = [o.strip() for o in field_options.split(",") if o.strip()]
-
         if field_type in ("Nombre entier", "Nombre décimal") and field_min is not None:
             field_dict["min_value"] = field_min
             field_dict["max_value"] = field_max
@@ -391,12 +517,10 @@ def render_admin_tab() -> None:
         fields.append(field_dict)
         st.markdown("---")
 
-    # --- Bouton de création ---
     if st.button("✅ Créer le formulaire", use_container_width=True):
         errors = []
-
         if not form_title.strip():
-            errors.append("Le titre du formulaire est obligatoire.")
+            errors.append("Le titre est obligatoire.")
         if not domain_name.strip():
             errors.append("Le nom interne est obligatoire.")
         if not domain_name.strip().replace("_", "").isalnum():
@@ -417,158 +541,4 @@ def render_admin_tab() -> None:
                 "fields": [f for f in fields if f.get("name") and f.get("label")],
             }
             try:
-                save_schema_file(domain_name.strip(), schema)
-                st.success(f"✅ Formulaire **{form_title}** créé avec succès ! Sélectionne-le dans la sidebar.")
-                st.balloons()
-            except Exception as exc:
-                st.error(f"❌ Erreur lors de la création : {exc}")
-
-
-def main() -> None:
-    """Point d'entrée principal de l'application Streamlit."""
-
-    st.markdown(
-        "<h1>🗂️ DataCollect <span class='badge'>Universal</span></h1>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<p style='color:#888;font-size:0.8rem;letter-spacing:0.06em;'>"
-        "MOTEUR DE COLLECTE DE DONNÉES PILOTÉ PAR SCHÉMA — RÉALISÉ PAR BOTAGNE JULIEN CLAUDE DANIEL"
-        "</p>",
-        unsafe_allow_html=True,
-    )
-    st.markdown("---")
-
-    with st.sidebar:
-        st.markdown("### ⚙️ Configuration")
-        available = list_schemas()
-
-        if not available:
-            st.warning("Aucun formulaire disponible. Crées-en un dans l'onglet **Admin**.")
-            domain = None
-        else:
-            domain = st.selectbox(
-                "Formulaire actif",
-                available,
-                help="Choisissez le formulaire à utiliser",
-            )
-        st.markdown("---")
-
-    # ====================================================================
-    # ONGLETS
-    # ====================================================================
-    tab_form, tab_data, tab_stats, tab_admin = st.tabs([
-        "✏️  Saisie",
-        "📋  Données",
-        "📊  Statistiques",
-        "⚙️  Admin"
-    ])
-
-    # ------------------------------------------------------------------
-    # ONGLET ADMIN
-    # ------------------------------------------------------------------
-    with tab_admin:
-        render_admin_tab()
-
-    # Si aucun formulaire disponible, on s'arrête ici
-    if not domain:
-        with tab_form:
-            st.info("👆 Crée d'abord un formulaire dans l'onglet **Admin**.")
-        with tab_data:
-            st.info("👆 Crée d'abord un formulaire dans l'onglet **Admin**.")
-        with tab_stats:
-            st.info("👆 Crée d'abord un formulaire dans l'onglet **Admin**.")
-        return
-
-    # Chargement du schéma
-    try:
-        schema = load_schema(domain)
-    except Exception as exc:
-        st.error(f"❌ Impossible de charger le schéma `{domain}` : {exc}")
-        st.stop()
-
-    schema_fields: list[dict] = schema.get("fields", [])
-    form_title: str = schema.get("title", domain.replace("_", " ").title())
-    form_description: str = schema.get("description", "")
-
-    # Connexion DB
-    try:
-        conn = get_connection()
-        ensure_table(conn, domain, schema_fields)
-    except Exception as exc:
-        st.error(f"❌ Erreur de base de données : {exc}")
-        st.stop()
-
-    # Modèle Pydantic
-    try:
-        model_cls = build_model(schema_fields)
-    except Exception as exc:
-        st.error(f"❌ Erreur de validation : {exc}")
-        st.stop()
-
-    # ------------------------------------------------------------------
-    # ONGLET SAISIE
-    # ------------------------------------------------------------------
-    with tab_form:
-        st.markdown(f"## {form_title}")
-        if form_description:
-            st.caption(form_description)
-
-        with st.form(key=f"form_{domain}", clear_on_submit=True):
-            raw_values: dict[str, Any] = {}
-            for field in schema_fields:
-                try:
-                    raw_values[field["name"]] = render_field(field)
-                except Exception as exc:
-                    st.warning(f"Widget `{field.get('name')}` : {exc}")
-
-            submitted = st.form_submit_button("✅ Soumettre", use_container_width=True)
-
-        if submitted:
-            try:
-                instance, errors = validate_data(model_cls, raw_values)
-                if errors:
-                    st.error("❌ Corrigez les erreurs suivantes :")
-                    for err in errors:
-                        st.markdown(f"• {err}")
-                else:
-                    row_id = insert_row(conn, domain, instance.model_dump())
-                    st.success(f"✅ Enregistrement #{row_id} sauvegardé !")
-            except Exception as exc:
-                st.error(f"❌ Erreur : {exc}")
-                with st.expander("Détails"):
-                    st.code(traceback.format_exc())
-
-    # ------------------------------------------------------------------
-    # ONGLET DONNÉES
-    # ------------------------------------------------------------------
-    with tab_data:
-        st.markdown(f"## Données — *{form_title}*")
-        try:
-            df = fetch_all(conn, domain)
-        except Exception as exc:
-            st.error(f"Erreur : {exc}")
-            df = pd.DataFrame()
-
-        if df.empty:
-            st.info("📭 Aucune donnée encore collectée.")
-        else:
-            st.markdown(f"`{len(df)}` enregistrement(s).")
-            st.dataframe(df, use_container_width=True, hide_index=True)
-            st.markdown("#### Export")
-            export_dataframe(df, domain)
-
-    # ------------------------------------------------------------------
-    # ONGLET STATISTIQUES
-    # ------------------------------------------------------------------
-    with tab_stats:
-        st.markdown(f"## Statistiques — *{form_title}*")
-        try:
-            df_stats = fetch_all(conn, domain)
-            render_statistics(df_stats, schema_fields)
-        except Exception as exc:
-            st.error(f"❌ Erreur : {exc}")
-
-
-if __name__ == "__main__":
-    main()
+                save_schema_file(domain_name.s
