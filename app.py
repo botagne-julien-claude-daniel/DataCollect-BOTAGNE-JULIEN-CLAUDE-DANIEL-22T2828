@@ -142,17 +142,7 @@ st.markdown(
 # ---------------------------------------------------------------------------
 # Fonctions utilitaires UI
 # ---------------------------------------------------------------------------
-
 def render_field(field: dict) -> Any:
-    """Génère le widget Streamlit approprié pour un champ du schéma.
-
-    Args:
-        field: Dictionnaire décrivant un champ (``name``, ``label``,
-            ``type``, ``options``, ``help``, ``required``, etc.).
-
-    Returns:
-        La valeur saisie par l'utilisateur via le widget.
-    """
     label: str = field.get("label", field["name"])
     field_type: str = field.get("type", "str")
     help_text: str | None = field.get("help")
@@ -168,24 +158,27 @@ def render_field(field: dict) -> Any:
         return None if value == "— Sélectionner —" else value
 
     if field_type == "int":
-    min_val = field.get("min_value")
-    default_val = field.get("default", min_val if min_val is not None else 0)
-    return st.number_input(
-        full_label,
-        step=1,
-        value=default_val,
-        min_value=min_val,
-        max_value=field.get("max_value"),
-        help=help_text,
-    )
+        min_val = field.get("min_value")
+        default_val = field.get("default", min_val if min_val is not None else 0)
+        return st.number_input(
+            full_label,
+            step=1,
+            value=default_val,
+            min_value=min_val,
+            max_value=field.get("max_value"),
+            help=help_text,
+        )
 
     if field_type == "float":
+        min_v = field.get("min_value")
+        max_v = field.get("max_value")
+        default_val = float(field.get("default", min_v if min_v is not None else 0.0))
         return st.number_input(
             full_label,
             step=field.get("step", 0.1),
-            value=float(field.get("default", 0.0)),
-            min_value=float(field["min_value"]) if field.get("min_value") is not None else None,
-            max_value=float(field["max_value"]) if field.get("max_value") is not None else None,
+            value=default_val,
+            min_value=float(min_v) if min_v is not None else None,
+            max_value=float(max_v) if max_v is not None else None,
             format="%.2f",
             help=help_text,
         )
@@ -194,7 +187,6 @@ def render_field(field: dict) -> Any:
         default_date = date.today()
         return st.date_input(full_label, value=default_date, help=help_text)
 
-    # Fallback : str (texte libre ou multi-lignes)
     if field.get("multiline"):
         return st.text_area(full_label, value=field.get("default", ""), help=help_text)
     return st.text_input(full_label, value=field.get("default", ""), help=help_text)
