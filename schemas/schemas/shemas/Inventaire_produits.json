@@ -1,0 +1,67 @@
+{
+  "title": "Inventaire Produits",
+  "description": "Suivi des stocks entrants et sortants.",
+  "fields": [
+    {
+      "name": "reference",
+      "label": "Référence produit",
+      "type": "str",
+      "required": true,
+      "help": "Code SKU ou référence interne"
+    },
+    {
+      "name": "designation",
+      "label": "Désignation",
+      "type": "str",
+      "required": true
+    },
+    {
+      "name": "categorie",
+      "label": "Catégorie",
+      "type": "str",
+      "required": true,
+      "options": ["Matière première", "Produit fini", "Consommable", "Outillage", "Emballage"]
+    },
+    {
+      "name": "quantite",
+      "label": "Quantité",
+      "type": "int",
+      "required": true,
+      "min_value": 0
+    },
+    {
+      "name": "prix_unitaire",
+      "label": "Prix unitaire HT (€)",
+      "type": "float",
+      "required": true,
+      "min_value": 0.0,
+      "step": 0.01
+    },
+    {
+      "name": "fournisseur",
+      "label": "Fournisseur",
+      "type": "str",
+      "required": false
+    },
+    {
+      "name": "date_entree",
+      "label": "Date d'entrée en stock",
+      "type": "date",
+      "required": true
+    },
+    {
+      "name": "emplacement",
+      "label": "Emplacement (allée-rayon)",
+      "type": "str",
+      "required": false,
+      "help": "Ex. : A3-R12"
+    },
+    {
+      "name": "etat",
+      "label": "État",
+      "type": "str",
+      "required": true,
+      "options": ["Neuf", "Bon", "À contrôler", "Défectueux"]
+    }
+  ]
+}
