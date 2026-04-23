@@ -167,7 +167,7 @@ def render_field(field: dict) -> Any:
         value = st.selectbox(full_label, display_options, help=help_text)
         return None if value == "— Sélectionner —" else value
 
-    iif field_type == "int":
+    if field_type == "int":
     min_val = field.get("min_value")
     default_val = field.get("default", min_val if min_val is not None else 0)
     return st.number_input(
