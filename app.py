@@ -435,8 +435,6 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
-
-
 def render_admin_tab() -> None:
     """Affiche l'onglet Admin pour créer un nouveau formulaire sans code."""
 
@@ -475,7 +473,11 @@ def render_admin_tab() -> None:
 
         with col2:
             field_required = st.checkbox("Obligatoire", value=True, key=f"required_{i}")
-            field_help = st.text_input("Texte d'aide (optionnel)", placeholder="Ex : Entrez votre prénom", key=f"help_{i}")
+            field_help = st.text_input(
+                "Texte d'aide (optionnel)",
+                placeholder="Ex : Entrez votre prénom",
+                key=f"help_{i}"
+            )
 
             field_options = ""
             field_min = None
@@ -541,4 +543,127 @@ def render_admin_tab() -> None:
                 "fields": [f for f in fields if f.get("name") and f.get("label")],
             }
             try:
-                save_schema_file(domain_name.s
+                save_schema_file(domain_name.strip(), schema)
+                st.success(f"✅ Formulaire **{form_title}** créé ! Sélectionne-le dans la sidebar.")
+                st.balloons()
+            except Exception as exc:
+                st.error(f"❌ Erreur : {exc}")
+
+
+def main() -> None:
+    """Point d'entrée principal de l'application Streamlit."""
+
+    st.markdown(
+        "<h1>🗂️ DataCollect <span class='badge'>Universal</span></h1>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<p style='color:#888;font-size:0.8rem;letter-spacing:0.06em;'>"
+        "MOTEUR DE COLLECTE DE DONNÉES PILOTÉ PAR SCHÉMA — RÉALISÉ PAR BOTAGNE JULIEN CLAUDE DANIEL"
+        "</p>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("---")
+
+    with st.sidebar:
+        st.markdown("### ⚙️ Configuration")
+        available = list_schemas()
+        if not available:
+            st.warning("Aucun formulaire. Crées-en un dans l'onglet Admin.")
+            domain = None
+        else:
+            domain = st.selectbox("Formulaire actif", available)
+        st.markdown("---")
+
+    tab_form, tab_data, tab_stats, tab_admin = st.tabs([
+        "✏️  Saisie", "📋  Données", "📊  Statistiques", "⚙️  Admin"
+    ])
+
+    with tab_admin:
+        render_admin_tab()
+
+    if not domain:
+        with tab_form:
+            st.info("👆 Crée d'abord un formulaire dans l'onglet Admin.")
+        with tab_data:
+            st.info("👆 Crée d'abord un formulaire dans l'onglet Admin.")
+        with tab_stats:
+            st.info("👆 Crée d'abord un formulaire dans l'onglet Admin.")
+        return
+
+    try:
+        schema = load_schema(domain)
+    except Exception as exc:
+        st.error(f"❌ Impossible de charger le schéma : {exc}")
+        st.stop()
+
+    schema_fields: list[dict] = schema.get("fields", [])
+    form_title: str = schema.get("title", domain.replace("_", " ").title())
+    form_description: str = schema.get("description", "")
+
+    try:
+        conn = get_connection()
+        ensure_table(conn, domain, schema_fields)
+    except Exception as exc:
+        st.error(f"❌ Erreur de base de données : {exc}")
+        st.stop()
+
+    try:
+        model_cls = build_model(schema_fields)
+    except Exception as exc:
+        st.error(f"❌ Erreur de validation : {exc}")
+        st.stop()
+
+    with tab_form:
+        st.markdown(f"## {form_title}")
+        if form_description:
+            st.caption(form_description)
+        with st.form(key=f"form_{domain}", clear_on_submit=True):
+            raw_values: dict[str, Any] = {}
+            for field in schema_fields:
+                try:
+                    raw_values[field["name"]] = render_field(field)
+                except Exception as exc:
+                    st.warning(f"Widget `{field.get('name')}` : {exc}")
+            submitted = st.form_submit_button("✅ Soumettre", use_container_width=True)
+        if submitted:
+            try:
+                instance, errors = validate_data(model_cls, raw_values)
+                if errors:
+                    st.error("❌ Corrigez les erreurs suivantes :")
+                    for err in errors:
+                        st.markdown(f"• {err}")
+                else:
+                    row_id = insert_row(conn, domain, instance.model_dump())
+                    st.success(f"✅ Enregistrement #{row_id} sauvegardé !")
+            except Exception as exc:
+                st.error(f"❌ Erreur : {exc}")
+                with st.expander("Détails"):
+                    st.code(traceback.format_exc())
+
+    with tab_data:
+        st.markdown(f"## Données — *{form_title}*")
+        try:
+            df = fetch_all(conn, domain)
+        except Exception as exc:
+            st.error(f"Erreur : {exc}")
+            df = pd.DataFrame()
+        if df.empty:
+            st.info("📭 Aucune donnée encore collectée.")
+        else:
+            st.markdown(f"`{len(df)}` enregistrement(s).")
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.markdown("#### Export")
+            export_dataframe(df, domain)
+
+    with tab_stats:
+        st.markdown(f"## Statistiques — *{form_title}*")
+        try:
+            df_stats = fetch_all(conn, domain)
+            render_statistics(df_stats, schema_fields)
+        except Exception as exc:
+            st.error(f"❌ Erreur : {exc}")
+
+
+if __name__ == "__main__":
+    main()
