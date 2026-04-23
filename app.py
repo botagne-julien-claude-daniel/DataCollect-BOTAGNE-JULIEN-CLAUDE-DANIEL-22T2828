@@ -178,7 +178,6 @@ def render_field(field: dict) -> Any:
         max_value=field.get("max_value"),
         help=help_text,
     )
-        )
 
     if field_type == "float":
         return st.number_input(
