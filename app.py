@@ -1095,10 +1095,43 @@ def main() -> None:
             """, unsafe_allow_html=True)
             st.dataframe(df, use_container_width=True, hide_index=True)
             export_dataframe(df, domain)
+            # ----------------------------------------------------------------
+# ONGLET STATISTIQUES
+# ----------------------------------------------------------------
+with tab_stats:
+    st.markdown(
+        f"""
+        <div class="preview-header" style="background:{gradient}; padding:1.5rem 2rem;">
+            <div style="position:relative;">
+                <div style="font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase;
+                    color:rgba(255,255,255,0.65); margin-bottom:0.3rem;">
+                    📊 Tableau de bord analytique
+                </div>
+                <h2 style="font-size:1.4rem; margin:0;">{form_title}</h2>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    # ----------------------------------------------------------------
-    # ONGLET STATISTIQUES
-    # ----------------------------------------------------------------
-    with tab_stats:
-        st.markdown(f"""
-        <div class="preview-header" style="background:{gradient}; padding:1.5rem 
+    try:
+        if conn is None:
+            raise ValueError("Connexion à la base de données invalide")
+
+        if not domain:
+            raise ValueError("Domain non défini")
+
+        df_stats = fetch_all(conn, domain)
+
+        if df_stats is None or df_stats.empty:
+            st.warning("⚠️ Aucune donnée disponible pour les statistiques.")
+        else:
+            render_statistics(df_stats, schema_fields)
+
+    except Exception as exc:
+        st.error(f"❌ Erreur : {str(exc)}")
+
+
+if __name__ == "__main__":
+    main()
+
