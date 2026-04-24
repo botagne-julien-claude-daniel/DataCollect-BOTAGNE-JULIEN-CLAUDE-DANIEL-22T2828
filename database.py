@@ -5,6 +5,7 @@ Google Style Docstrings.
 
 from __future__ import annotations
 
+import json
 import logging
 from contextlib import contextmanager
 from typing import Any
@@ -63,8 +64,6 @@ _PG_TYPE_MAP: dict[str, str] = {
 def ensure_schemas_table(conn) -> None:
     """Crée la table _schemas si elle n'existe pas.
 
-    Cette table stocke les schémas créés via l'onglet Admin.
-
     Args:
         conn: Connexion psycopg2 active.
     """
@@ -78,18 +77,16 @@ def ensure_schemas_table(conn) -> None:
     """
     with transaction(conn) as cur:
         cur.execute(ddl)
-    logger.debug("Table _schemas assurée.")
 
 
 def save_schema_db(conn, domain: str, schema: dict) -> None:
-    """Sauvegarde un schéma dans la table _schemas de Supabase.
+    """Sauvegarde un schéma dans Supabase de façon permanente.
 
     Args:
         conn: Connexion psycopg2 active.
-        domain: Nom du domaine (identifiant unique).
-        schema: Dictionnaire du schéma à sauvegarder.
+        domain: Identifiant unique du formulaire.
+        schema: Dictionnaire du schéma.
     """
-    import json
     schema_json = json.dumps(schema, ensure_ascii=False)
     sql = """
     INSERT INTO _schemas (domain, schema_json)
@@ -98,11 +95,10 @@ def save_schema_db(conn, domain: str, schema: dict) -> None:
     """
     with transaction(conn) as cur:
         cur.execute(sql, (domain, schema_json))
-    logger.info("Schéma sauvegardé en DB : %s", domain)
 
 
 def load_schemas_db(conn) -> dict[str, dict]:
-    """Charge tous les schémas depuis la table _schemas.
+    """Charge tous les schémas depuis Supabase.
 
     Args:
         conn: Connexion psycopg2 active.
@@ -110,10 +106,9 @@ def load_schemas_db(conn) -> dict[str, dict]:
     Returns:
         Dictionnaire {domain: schema_dict}.
     """
-    import json
     try:
         with transaction(conn) as cur:
-            cur.execute("SELECT domain, schema_json FROM _schemas ORDER BY domain;")
+            cur.execute("SELECT domain, schema_json FROM _schemas ORDER BY created_at DESC;")
             rows = cur.fetchall()
             return {row["domain"]: json.loads(row["schema_json"]) for row in rows}
     except Exception as exc:
@@ -122,19 +117,22 @@ def load_schemas_db(conn) -> dict[str, dict]:
 
 
 def delete_schema_db(conn, domain: str) -> None:
-    """Supprime un schéma de la table _schemas.
+    """Supprime un schéma et toutes ses données.
 
     Args:
         conn: Connexion psycopg2 active.
-        domain: Nom du domaine à supprimer.
+        domain: Identifiant du formulaire à supprimer.
     """
     with transaction(conn) as cur:
         cur.execute("DELETE FROM _schemas WHERE domain = %s;", (domain,))
-    logger.info("Schéma supprimé : %s", domain)
+        try:
+            cur.execute(f'DROP TABLE IF EXISTS "{domain}";')
+        except Exception:
+            pass
 
 
 def ensure_table(conn, table_name: str, fields: list[dict]) -> None:
-    """Crée la table PostgreSQL si elle n'existe pas.
+    """Crée la table de données si elle n'existe pas.
 
     Args:
         conn: Connexion psycopg2 active.
@@ -148,11 +146,9 @@ def ensure_table(conn, table_name: str, fields: list[dict]) -> None:
     for f in fields:
         pg_type = _PG_TYPE_MAP.get(f.get("type", "str"), "TEXT")
         col_defs.append(f'"{f["name"]}" {pg_type}')
-
     ddl = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(col_defs)});'
     with transaction(conn) as cur:
         cur.execute(ddl)
-    logger.debug("Table assurée : %s", table_name)
 
 
 def insert_row(conn, table_name: str, data: dict[str, Any]) -> int:
@@ -183,7 +179,7 @@ def fetch_all(conn, table_name: str) -> pd.DataFrame:
         table_name: Nom de la table.
 
     Returns:
-        DataFrame pandas, vide si la table n'existe pas encore.
+        DataFrame pandas.
     """
     try:
         with transaction(conn) as cur:
