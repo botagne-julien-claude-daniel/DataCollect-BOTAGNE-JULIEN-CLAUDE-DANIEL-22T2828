@@ -917,67 +917,288 @@ def main() -> None:
     query_params = st.query_params
     url_study = query_params.get("study", None)
 
-    # =========================
-    # HEADER PRINCIPAL
-    # =========================
-    st.markdown(
-        f"""
-        <div style="background:{t['hero']}; border-radius:20px; padding:2.5rem 3rem;
-            margin-bottom:2rem; position:relative; overflow:hidden;">
-            <div style="position:absolute; top:-40px; right:-40px; width:250px; height:250px;
-                background:rgba(255,255,255,0.06); border-radius:50%;"></div>
-            <div style="position:absolute; bottom:-60px; right:100px; width:180px; height:180px;
-                background:rgba(255,255,255,0.04); border-radius:50%;"></div>
-            <div style="position:absolute; top:20px; right:200px; width:80px; height:80px;
+    st.markdown(f"""
+    <div style="background:{t['hero']}; border-radius:20px; padding:2.5rem 3rem;
+        margin-bottom:2rem; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:-40px; right:-40px; width:250px; height:250px;
+            background:rgba(255,255,255,0.06); border-radius:50%;"></div>
+        <div style="position:absolute; bottom:-60px; right:100px; width:180px; height:180px;
+            background:rgba(255,255,255,0.04); border-radius:50%;"></div>
+        <div style="position:absolute; top:20px; right:200px; width:80px; height:80px;
+            background:rgba(255,255,255,0.05); border-radius:50%;"></div>
+        <div style="position:relative;">
+            <div style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
+                color:rgba(255,255,255,0.6); margin-bottom:0.5rem;">
+                Plateforme de collecte de données
+            </div>
+            <div style="font-family:'Playfair Display',serif; font-size:2.5rem; font-weight:800;
+                color:white; line-height:1.1; margin-bottom:0.5rem;">
+                DataCollect
+                <span style="display:inline-block; background:rgba(255,255,255,0.2);
+                    color:white; font-size:0.6rem; font-weight:600; padding:4px 12px;
+                    border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
+                    vertical-align:middle; margin-left:10px; border:1px solid rgba(255,255,255,0.3);">
+                    Universal
+                </span>
+            </div>
+            <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;">
+                Réalisé par Botagne Julien Claude Daniel · Moteur piloté par schéma
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.sidebar:
+        st.markdown(f"""
+        <div style="padding:1.2rem 0 0.8rem;">
+            <div style="font-family:'Playfair Display',serif; font-size:1.2rem;
+                font-weight:700; color:{t['sidebar_text']};">📋 DataCollect</div>
+            <div style="font-size:0.65rem; color:{t['sidebar_muted']}; letter-spacing:0.1em;
+                text-transform:uppercase; margin-top:2px;">Universal Platform</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.session_state.theme = st.selectbox(
+            "🎨 Thème",
+            list(THEMES.keys()),
+            index=list(THEMES.keys()).index(st.session_state.theme),
+            key="theme_select"
+        )
+        t = THEMES[st.session_state.theme]
+        apply_theme(t)
+
+        st.markdown(f"<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
+                    unsafe_allow_html=True)
+
+        render_auth_sidebar()
+
+        st.markdown(f"<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
+                    unsafe_allow_html=True)
+
+        if is_admin():
+            all_schemas = load_schemas_db(conn)
+        elif st.session_state.role == "creator":
+            all_schemas = load_schemas_for_user(conn, st.session_state.user_id)
+        else:
+            all_schemas = {}
+
+        available = list(all_schemas.keys())
+
+        if url_study:
+            schema_from_url = load_schema_by_domain(conn, url_study)
+            domain = url_study if schema_from_url else None
+        elif available:
+            if url_study and url_study in available:
+                default_idx = available.index(url_study)
+            else:
+                default_idx = 0
+            domain = st.selectbox("Formulaire actif", available, index=default_idx,
+                                  format_func=lambda x: all_schemas[x].get("title", x))
+        else:
+            domain = None
+            if st.session_state.role == "participant":
+                st.markdown(f"""
+                <div style="background:rgba(255,255,255,0.08); border-radius:10px;
+                    padding:1rem; margin-top:0.5rem;">
+                    <div style="color:{t['sidebar_muted']}; font-size:0.8rem; text-align:center;">
+                        Utilisez un lien d'étude pour accéder à un formulaire.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.warning("Aucun formulaire. Créez-en un dans Admin.")
+
+        st.markdown(f"""
+        <div style="font-size:0.65rem; color:{t['sidebar_muted']}; text-align:center;
+            padding:1rem 0; margin-top:auto;">
+            🔒 Données permanentes · Supabase PostgreSQL
+        </div>
+        """, unsafe_allow_html=True)
+
+    tab_form, tab_data, tab_stats, tab_admin = st.tabs([
+        "✏️  Saisie", "📋  Données", "📊  Statistiques", "⚙️  Admin"
+    ])
+
+    with tab_admin:
+        render_admin_tab(conn, t)
+
+    if url_study:
+        schema = load_schema_by_domain(conn, url_study)
+        if schema:
+            domain = url_study
+        else:
+            with tab_form:
+                st.error("❌ Formulaire introuvable. Le lien est invalide ou le formulaire a été supprimé.")
+            return
+    elif domain and domain in all_schemas:
+        schema = all_schemas[domain]
+    else:
+        schema = None
+
+    if not schema:
+        with tab_form:
+            st.markdown(f"""
+            <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:16px;
+                padding:3rem; text-align:center; margin:1rem 0;">
+                <div style="font-size:3rem;">📋</div>
+                <div style="font-size:1.1rem; font-weight:600; color:{t['text_secondary']}; margin-top:1rem;">
+                    Aucun formulaire sélectionné
+                </div>
+                <div style="color:{t['text_secondary']}; font-size:0.85rem; margin-top:0.5rem;">
+                    Utilisez un lien d'étude ou connectez-vous pour accéder à vos formulaires.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        return
+
+    schema_fields: list[dict] = schema.get("fields", [])
+    form_title: str = schema.get("title", domain.replace("_", " ").title())
+    form_description: str = schema.get("description", "")
+    domain_gradient = get_domain_gradient(domain)
+    share_url = f"{get_app_url()}/?study={domain}"
+
+    try:
+        ensure_table(conn, domain, schema_fields)
+    except Exception as exc:
+        st.error(f"❌ Erreur base de données : {exc}")
+        st.stop()
+
+    try:
+        model_cls = build_model(schema_fields)
+    except Exception as exc:
+        st.error(f"❌ Erreur validation : {exc}")
+        st.stop()
+
+    with tab_form:
+        st.markdown(f"""
+        <div style="background:{domain_gradient}; border-radius:16px; padding:2rem 2.5rem;
+            margin-bottom:1.5rem; position:relative; overflow:hidden;">
+            <div style="position:absolute; top:-30px; right:-30px; width:160px; height:160px;
+                background:rgba(255,255,255,0.07); border-radius:50%;"></div>
+            <div style="position:absolute; bottom:-40px; right:80px; width:100px; height:100px;
                 background:rgba(255,255,255,0.05); border-radius:50%;"></div>
             <div style="position:relative;">
-                <div style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
-                    color:rgba(255,255,255,0.6); margin-bottom:0.5rem;">
-                    Plateforme de collecte de données
+                <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
+                    color:rgba(255,255,255,0.6); margin-bottom:0.4rem;">📋 Formulaire d'étude</div>
+                <div style="font-family:'Playfair Display',serif; font-size:1.8rem; font-weight:700;
+                    color:white; margin-bottom:0.4rem;">{form_title}</div>
+                <div style="color:rgba(255,255,255,0.8); font-size:0.85rem;">
+                    {form_description or 'Remplissez le formulaire ci-dessous.'}
                 </div>
-                <div style="font-family:'Playfair Display',serif; font-size:2.5rem; font-weight:800;
-                    color:white; line-height:1.1; margin-bottom:0.5rem;">
-                    DataCollect
-                    <span style="display:inline-block; background:rgba(255,255,255,0.2);
-                        color:white; font-size:0.6rem; font-weight:600; padding:4px 12px;
-                        border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
-                        vertical-align:middle; margin-left:10px; border:1px solid rgba(255,255,255,0.3);">
-                        Universal
+                <div style="margin-top:1rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                    <span style="background:rgba(255,255,255,0.2); color:white; padding:3px 12px;
+                        border-radius:20px; font-size:0.72rem; font-weight:500;">
+                        {len(schema_fields)} champs
                     </span>
-                </div>
-                <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;">
-                    Réalisé par Botagne Julien Claude Daniel · Moteur piloté par schéma
+                    <span style="background:rgba(255,255,255,0.2); color:white; padding:3px 12px;
+                        border-radius:20px; font-size:0.72rem; font-weight:500;">
+                        🔒 Données permanentes
+                    </span>
                 </div>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
 
-    # =========================
-    # SIDEBAR (UI uniquement)
-    # =========================
-    with st.sidebar:
-        st.markdown(
-            f"""
-            <div style="padding:1.2rem 0 0.8rem;">
-                <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
-                            font-weight:700; color:white;">
-                    {form_title}
+        <div style="background:{t['secondary_bg']}; border:1.5px solid {t['border']};
+            border-radius:12px; padding:1.2rem 1.5rem; margin-bottom:1.5rem;">
+            <div style="font-weight:600; color:{t['accent']}; font-size:0.85rem; margin-bottom:0.4rem;">
+                🔗 Partager cette étude
+            </div>
+            <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:8px;
+                padding:0.7rem 1rem; font-family:monospace; font-size:0.78rem;
+                color:{t['accent']}; word-break:break-all;">
+                {share_url}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.form(key=f"form_{domain}", clear_on_submit=True):
+            field_chunks = [schema_fields[i:i+2] for i in range(0, len(schema_fields), 2)]
+            raw_values: dict[str, Any] = {}
+            for chunk in field_chunks:
+                cols = st.columns(len(chunk))
+                for j, field in enumerate(chunk):
+                    with cols[j]:
+                        try:
+                            raw_values[field["name"]] = render_field(field)
+                        except Exception as exc:
+                            st.warning(f"Champ `{field.get('name')}` : {exc}")
+            submitted = st.form_submit_button("✅ Soumettre ma réponse", use_container_width=True)
+
+        if submitted:
+            try:
+                instance, errors = validate_data(model_cls, raw_values)
+                if errors:
+                    st.error("❌ Corrigez les erreurs :")
+                    for err in errors:
+                        st.markdown(f"• {err}")
+                else:
+                    row_id = insert_row(conn, domain, instance.model_dump())
+                    st.success(f"✅ Réponse #{row_id} enregistrée ! Merci pour votre participation.")
+                    st.balloons()
+            except Exception as exc:
+                st.error(f"❌ Erreur : {exc}")
+                with st.expander("Détails"):
+                    st.code(traceback.format_exc())
+
+    with tab_data:
+        domain_creator = schema.get("_creator_id", "")
+        if not is_creator(domain_creator) and not url_study:
+            st.warning("🔐 Accès réservé au créateur du formulaire et à l'administrateur.")
+        else:
+            st.markdown(f"""
+            <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
+                border-radius:14px; padding:1.5rem; margin-bottom:1rem;">
+                <div style="font-family:'Playfair Display',serif; font-size:1.2rem;
+                    font-weight:700; color:{t['text']};">{form_title}</div>
+                <div style="color:{t['text_secondary']}; font-size:0.82rem; margin-top:0.3rem;">
+                    {form_description or ''}
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+            """, unsafe_allow_html=True)
 
-    # =========================
-    # LOGIQUE (hors sidebar)
-    # =========================
-    try:
-        df_stats = fetch_all(conn, domain)
-        render_statistics(df_stats, schema_fields, t)
-    except Exception as exc:
-        st.error(f"❌ Erreur : {exc}")
+            try:
+                df = fetch_all(conn, domain)
+            except Exception as exc:
+                st.error(f"Erreur : {exc}")
+                df = pd.DataFrame()
+
+            if df.empty:
+                st.info("📭 Aucune donnée collectée pour l'instant.")
+            else:
+                st.markdown(f"""
+                <span style="background:{t['tag_bg']}; color:{t['tag_text']}; padding:4px 14px;
+                    border-radius:20px; font-weight:600; font-size:0.85rem;">
+                    {len(df)} réponse(s)
+                </span>
+                """, unsafe_allow_html=True)
+                st.markdown("<div style='height:0.8rem'></div>", unsafe_allow_html=True)
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                export_dataframe(df, domain, t)
+
+    with tab_stats:
+        domain_creator = schema.get("_creator_id", "")
+        if not is_creator(domain_creator) and not url_study:
+            st.warning("🔐 Accès réservé au créateur du formulaire et à l'administrateur.")
+        else:
+            st.markdown(f"""
+            <div style="background:{domain_gradient}; border-radius:14px; padding:1.5rem 2rem;
+                margin-bottom:1.5rem; position:relative; overflow:hidden;">
+                <div style="position:relative;">
+                    <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
+                        color:rgba(255,255,255,0.6); margin-bottom:0.3rem;">
+                        📊 Tableau de bord analytique
+                    </div>
+                    <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
+                        font-weight:700; color:white;">{form_title}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            try:
+                df_stats = fetch_all(conn, domain)
+                render_statistics(df_stats, schema_fields, t)
+            except Exception as exc:
+                st.error(f"❌ Erreur : {exc}")
 
 
 if __name__ == "__main__":
