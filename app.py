@@ -779,7 +779,7 @@ def render_admin_tab(conn, t: dict) -> None:
                         st.rerun()
                     except Exception as exc:
                         st.error(f"❌ {exc}")
-    def main() -> None:
+def main() -> None:
     """Point d'entrée principal."""
     init_session()
 
