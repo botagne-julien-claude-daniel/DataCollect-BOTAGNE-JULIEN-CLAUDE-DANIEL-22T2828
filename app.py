@@ -1,6 +1,5 @@
 """
 app.py - DataCollect Universal.
-Système de rôles, interface envoûtante, thèmes multiples.
 Google Style Docstrings.
 """
 
@@ -40,150 +39,66 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------------------------------------------------------------------------
-# THÈMES
-# ---------------------------------------------------------------------------
-
 THEMES = {
     "☀️ Clair": {
-        "bg": "#F8F9FC",
-        "card": "#FFFFFF",
-        "text": "#1A1D23",
-        "text_secondary": "#64748B",
-        "accent": "#2563EB",
-        "accent_hover": "#1D4ED8",
-        "border": "#E2E8F0",
-        "input_bg": "#F1F5F9",
-        "input_text": "#1A1D23",
+        "bg": "#F8F9FC", "card": "#FFFFFF", "text": "#1A1D23",
+        "text_secondary": "#64748B", "accent": "#2563EB", "accent_hover": "#1D4ED8",
+        "border": "#E2E8F0", "input_bg": "#F1F5F9", "input_text": "#1A1D23",
         "sidebar_bg": "linear-gradient(160deg,#1E3A5F,#16304F)",
-        "sidebar_text": "#E8EDF5",
-        "sidebar_muted": "#A8B8CC",
-        "secondary_bg": "#EFF6FF",
-        "secondary_text": "#2563EB",
-        "tag_bg": "#DBEAFE",
-        "tag_text": "#1D4ED8",
-        "success_bg": "#F0FDF4",
-        "success_border": "#86EFAC",
-        "error_bg": "#FFF5F5",
-        "error_border": "#FCA5A5",
-        "metric_value": "#2563EB",
-        "metric_label": "#94A3B8",
+        "sidebar_text": "#E8EDF5", "sidebar_muted": "#A8B8CC",
+        "secondary_bg": "#EFF6FF", "secondary_text": "#2563EB",
+        "tag_bg": "#DBEAFE", "tag_text": "#1D4ED8",
+        "metric_value": "#2563EB", "metric_label": "#94A3B8",
         "hero": "linear-gradient(135deg,#1E3A5F 0%,#2563EB 60%,#60A5FA 100%)",
-        "tab_bg": "#FFFFFF",
-        "tab_selected": "#2563EB",
-        "divider": "#E2E8F0",
+        "tab_bg": "#FFFFFF", "tab_selected": "#2563EB", "divider": "#E2E8F0",
     },
     "🌙 Sombre": {
-        "bg": "#0D1117",
-        "card": "#161B22",
-        "text": "#E6EDF3",
-        "text_secondary": "#8B949E",
-        "accent": "#7C3AED",
-        "accent_hover": "#6D28D9",
-        "border": "#30363D",
-        "input_bg": "#21262D",
-        "input_text": "#E6EDF3",
+        "bg": "#0D1117", "card": "#161B22", "text": "#E6EDF3",
+        "text_secondary": "#8B949E", "accent": "#7C3AED", "accent_hover": "#6D28D9",
+        "border": "#30363D", "input_bg": "#21262D", "input_text": "#E6EDF3",
         "sidebar_bg": "linear-gradient(160deg,#0D1117,#161B22)",
-        "sidebar_text": "#E6EDF3",
-        "sidebar_muted": "#8B949E",
-        "secondary_bg": "#1C1033",
-        "secondary_text": "#A78BFA",
-        "tag_bg": "#2D1B69",
-        "tag_text": "#C4B5FD",
-        "success_bg": "#0D2818",
-        "success_border": "#238636",
-        "error_bg": "#2D0F0F",
-        "error_border": "#DA3633",
-        "metric_value": "#A78BFA",
-        "metric_label": "#8B949E",
+        "sidebar_text": "#E6EDF3", "sidebar_muted": "#8B949E",
+        "secondary_bg": "#1C1033", "secondary_text": "#A78BFA",
+        "tag_bg": "#2D1B69", "tag_text": "#C4B5FD",
+        "metric_value": "#A78BFA", "metric_label": "#8B949E",
         "hero": "linear-gradient(135deg,#1A0533 0%,#4C1D95 60%,#7C3AED 100%)",
-        "tab_bg": "#161B22",
-        "tab_selected": "#7C3AED",
-        "divider": "#30363D",
+        "tab_bg": "#161B22", "tab_selected": "#7C3AED", "divider": "#30363D",
     },
     "🌊 Océan": {
-        "bg": "#F0F9FF",
-        "card": "#FFFFFF",
-        "text": "#0C4A6E",
-        "text_secondary": "#0369A1",
-        "accent": "#0284C7",
-        "accent_hover": "#0369A1",
-        "border": "#BAE6FD",
-        "input_bg": "#E0F2FE",
-        "input_text": "#0C4A6E",
+        "bg": "#F0F9FF", "card": "#FFFFFF", "text": "#0C4A6E",
+        "text_secondary": "#0369A1", "accent": "#0284C7", "accent_hover": "#0369A1",
+        "border": "#BAE6FD", "input_bg": "#E0F2FE", "input_text": "#0C4A6E",
         "sidebar_bg": "linear-gradient(160deg,#0C4A6E,#075985)",
-        "sidebar_text": "#E0F2FE",
-        "sidebar_muted": "#7DD3FC",
-        "secondary_bg": "#E0F2FE",
-        "secondary_text": "#0284C7",
-        "tag_bg": "#BAE6FD",
-        "tag_text": "#0369A1",
-        "success_bg": "#F0FDF4",
-        "success_border": "#86EFAC",
-        "error_bg": "#FFF5F5",
-        "error_border": "#FCA5A5",
-        "metric_value": "#0284C7",
-        "metric_label": "#7DD3FC",
+        "sidebar_text": "#E0F2FE", "sidebar_muted": "#7DD3FC",
+        "secondary_bg": "#E0F2FE", "secondary_text": "#0284C7",
+        "tag_bg": "#BAE6FD", "tag_text": "#0369A1",
+        "metric_value": "#0284C7", "metric_label": "#7DD3FC",
         "hero": "linear-gradient(135deg,#0C4A6E 0%,#0284C7 60%,#38BDF8 100%)",
-        "tab_bg": "#FFFFFF",
-        "tab_selected": "#0284C7",
-        "divider": "#BAE6FD",
+        "tab_bg": "#FFFFFF", "tab_selected": "#0284C7", "divider": "#BAE6FD",
     },
     "🌿 Nature": {
-        "bg": "#F0FDF4",
-        "card": "#FFFFFF",
-        "text": "#052E16",
-        "text_secondary": "#166534",
-        "accent": "#16A34A",
-        "accent_hover": "#15803D",
-        "border": "#BBF7D0",
-        "input_bg": "#DCFCE7",
-        "input_text": "#052E16",
+        "bg": "#F0FDF4", "card": "#FFFFFF", "text": "#052E16",
+        "text_secondary": "#166534", "accent": "#16A34A", "accent_hover": "#15803D",
+        "border": "#BBF7D0", "input_bg": "#DCFCE7", "input_text": "#052E16",
         "sidebar_bg": "linear-gradient(160deg,#052E16,#065F46)",
-        "sidebar_text": "#DCFCE7",
-        "sidebar_muted": "#86EFAC",
-        "secondary_bg": "#DCFCE7",
-        "secondary_text": "#16A34A",
-        "tag_bg": "#BBF7D0",
-        "tag_text": "#15803D",
-        "success_bg": "#F0FDF4",
-        "success_border": "#86EFAC",
-        "error_bg": "#FFF5F5",
-        "error_border": "#FCA5A5",
-        "metric_value": "#16A34A",
-        "metric_label": "#86EFAC",
+        "sidebar_text": "#DCFCE7", "sidebar_muted": "#86EFAC",
+        "secondary_bg": "#DCFCE7", "secondary_text": "#16A34A",
+        "tag_bg": "#BBF7D0", "tag_text": "#15803D",
+        "metric_value": "#16A34A", "metric_label": "#86EFAC",
         "hero": "linear-gradient(135deg,#052E16 0%,#16A34A 60%,#4ADE80 100%)",
-        "tab_bg": "#FFFFFF",
-        "tab_selected": "#16A34A",
-        "divider": "#BBF7D0",
+        "tab_bg": "#FFFFFF", "tab_selected": "#16A34A", "divider": "#BBF7D0",
     },
     "🔥 Sunset": {
-        "bg": "#FFF7ED",
-        "card": "#FFFFFF",
-        "text": "#431407",
-        "text_secondary": "#9A3412",
-        "accent": "#EA580C",
-        "accent_hover": "#C2410C",
-        "border": "#FED7AA",
-        "input_bg": "#FFEDD5",
-        "input_text": "#431407",
+        "bg": "#FFF7ED", "card": "#FFFFFF", "text": "#431407",
+        "text_secondary": "#9A3412", "accent": "#EA580C", "accent_hover": "#C2410C",
+        "border": "#FED7AA", "input_bg": "#FFEDD5", "input_text": "#431407",
         "sidebar_bg": "linear-gradient(160deg,#431407,#7C2D12)",
-        "sidebar_text": "#FFEDD5",
-        "sidebar_muted": "#FDBA74",
-        "secondary_bg": "#FFEDD5",
-        "secondary_text": "#EA580C",
-        "tag_bg": "#FED7AA",
-        "tag_text": "#C2410C",
-        "success_bg": "#F0FDF4",
-        "success_border": "#86EFAC",
-        "error_bg": "#FFF5F5",
-        "error_border": "#FCA5A5",
-        "metric_value": "#EA580C",
-        "metric_label": "#FDBA74",
+        "sidebar_text": "#FFEDD5", "sidebar_muted": "#FDBA74",
+        "secondary_bg": "#FFEDD5", "secondary_text": "#EA580C",
+        "tag_bg": "#FED7AA", "tag_text": "#C2410C",
+        "metric_value": "#EA580C", "metric_label": "#FDBA74",
         "hero": "linear-gradient(135deg,#431407 0%,#EA580C 60%,#FB923C 100%)",
-        "tab_bg": "#FFFFFF",
-        "tab_selected": "#EA580C",
-        "divider": "#FED7AA",
+        "tab_bg": "#FFFFFF", "tab_selected": "#EA580C", "divider": "#FED7AA",
     },
 }
 
@@ -198,7 +113,7 @@ THEME_COLORS = [
 
 
 def get_domain_gradient(domain: str) -> str:
-    """Retourne un dégradé basé sur le nom du domaine.
+    """Retourne un dégradé CSS basé sur le domaine.
 
     Args:
         domain: Nom du domaine.
@@ -206,28 +121,25 @@ def get_domain_gradient(domain: str) -> str:
     Returns:
         String CSS gradient.
     """
-    idx = sum(ord(c) for c in domain) % len(THEME_COLORS)
-    return THEME_COLORS[idx]
+    return THEME_COLORS[sum(ord(c) for c in domain) % len(THEME_COLORS)]
 
 
 def apply_theme(t: dict) -> None:
-    """Applique le thème via CSS dynamique.
+    """Applique le thème via CSS.
 
     Args:
-        t: Dictionnaire de couleurs du thème.
+        t: Dictionnaire de couleurs.
     """
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
-    /* RESET & BASE */
     html, body, [class*="css"] {{
         font-family: 'Inter', sans-serif !important;
         background-color: {t['bg']} !important;
         color: {t['text']} !important;
     }}
 
-    /* CACHER ICÔNE GITHUB ET MENU STREAMLIT */
     #MainMenu, footer, header,
     [data-testid="stToolbar"],
     .viewerBadge_container__1QSob,
@@ -239,7 +151,6 @@ def apply_theme(t: dict) -> None:
         visibility: hidden !important;
     }}
 
-    /* SIDEBAR */
     [data-testid="stSidebar"] {{
         background: {t['sidebar_bg']} !important;
         border-right: none !important;
@@ -247,20 +158,19 @@ def apply_theme(t: dict) -> None:
     [data-testid="stSidebar"] * {{
         color: {t['sidebar_text']} !important;
     }}
-    [data-testid="stSidebar"] .stSelectbox > div > div {{
-        background: rgba(255,255,255,0.1) !important;
+    [data-testid="stSidebar"] .stSelectbox > div > div,
+    [data-testid="stSidebar"] .stTextInput > div > div > input {{
+        background: rgba(255,255,255,0.12) !important;
         border: 1px solid rgba(255,255,255,0.2) !important;
-        color: {t['sidebar_text']} !important;
+        color: white !important;
     }}
 
-    /* TABS */
     .stTabs [data-baseweb="tab-list"] {{
         background: {t['tab_bg']} !important;
         border: 1px solid {t['border']} !important;
         border-radius: 14px !important;
         padding: 5px !important;
         gap: 3px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
     }}
     .stTabs [data-baseweb="tab"] {{
         background: transparent !important;
@@ -273,10 +183,8 @@ def apply_theme(t: dict) -> None:
     .stTabs [aria-selected="true"] {{
         background: {t['tab_selected']} !important;
         color: white !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
     }}
 
-    /* INPUTS - CORRECTION TEXTE INVISIBLE */
     input, textarea, select {{
         color: {t['input_text']} !important;
         background-color: {t['input_bg']} !important;
@@ -310,27 +218,22 @@ def apply_theme(t: dict) -> None:
         border-radius: 8px !important;
     }}
 
-    /* BOUTONS */
     .stButton > button {{
         background: {t['accent']} !important;
         color: white !important;
         border: none !important;
         border-radius: 10px !important;
-        font-family: 'Inter', sans-serif !important;
         font-weight: 600 !important;
         font-size: 0.85rem !important;
         padding: 0.65rem 1.5rem !important;
         box-shadow: 0 4px 14px {t['accent']}44 !important;
-        transition: all 0.2s !important;
         width: 100% !important;
     }}
     .stButton > button:hover {{
         background: {t['accent_hover']} !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px {t['accent']}55 !important;
     }}
 
-    /* FORM */
     [data-testid="stForm"] {{
         background: {t['card']} !important;
         border-radius: 16px !important;
@@ -339,40 +242,22 @@ def apply_theme(t: dict) -> None:
         box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
     }}
 
-    /* CHECKBOXES & LABELS */
-    .stCheckbox label, .stRadio label {{
-        color: {t['text']} !important;
-    }}
-    label {{
-        color: {t['text']} !important;
-        font-weight: 500 !important;
-    }}
+    label {{ color: {t['text']} !important; font-weight: 500 !important; }}
+    .stCheckbox label {{ color: {t['text']} !important; }}
 
-    /* DATAFRAME */
     [data-testid="stDataFrame"] {{
         border-radius: 12px !important;
-        overflow: hidden !important;
         border: 1px solid {t['border']} !important;
     }}
-
-    /* MÉTRIQUES */
-    [data-testid="stMetricValue"] {{
-        color: {t['metric_value']} !important;
-    }}
-
-    /* SCROLLBAR */
-    ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
-    ::-webkit-scrollbar-track {{ background: {t['bg']}; }}
-    ::-webkit-scrollbar-thumb {{ background: {t['border']}; border-radius: 3px; }}
     </style>
     """, unsafe_allow_html=True)
 
 
 def get_app_url() -> str:
-    """Retourne l'URL de base de l'application.
+    """Retourne l'URL de base.
 
     Returns:
-        URL sous forme de chaîne.
+        URL string.
     """
     try:
         url = st.get_option("browser.serverAddress") or "votre-app.streamlit.app"
@@ -383,10 +268,6 @@ def get_app_url() -> str:
     except Exception:
         return "https://votre-app.streamlit.app"
 
-
-# ---------------------------------------------------------------------------
-# SESSION STATE - AUTHENTIFICATION
-# ---------------------------------------------------------------------------
 
 def init_session() -> None:
     """Initialise les variables de session."""
@@ -399,7 +280,7 @@ def init_session() -> None:
 
 
 def is_admin() -> bool:
-    """Vérifie si l'utilisateur est l'administrateur.
+    """Vérifie si admin.
 
     Returns:
         True si admin.
@@ -407,79 +288,90 @@ def is_admin() -> bool:
     return st.session_state.role == "admin"
 
 
-def is_creator(domain_creator_id: str) -> bool:
-    """Vérifie si l'utilisateur est le créateur d'un formulaire.
-
-    Args:
-        domain_creator_id: ID du créateur du formulaire.
+def is_logged_in() -> bool:
+    """Vérifie si connecté (admin ou créateur).
 
     Returns:
-        True si créateur ou admin.
+        True si connecté.
     """
-    return is_admin() or st.session_state.user_id == domain_creator_id
+    return st.session_state.role in ("admin", "creator")
 
 
-# ---------------------------------------------------------------------------
-# PANNEAU DE CONNEXION SIDEBAR
-# ---------------------------------------------------------------------------
+def render_sidebar_auth(t: dict) -> None:
+    """Affiche l'authentification dans la sidebar.
 
-def render_auth_sidebar() -> None:
-    """Affiche le panneau d'authentification dans la sidebar."""
-    t = THEMES[st.session_state.theme]
+    Args:
+        t: Thème actif.
+    """
+    if not is_logged_in():
+        st.sidebar.markdown(f"""
+        <div style="background:rgba(255,255,255,0.08); border-radius:12px;
+            padding:1.2rem; margin-bottom:1rem;">
+            <div style="color:white; font-weight:600; margin-bottom:0.8rem;">
+                🔐 Se connecter
+            </div>
+        """, unsafe_allow_html=True)
 
-    if st.session_state.role == "participant":
-        with st.sidebar.expander("🔐 Se connecter", expanded=False):
-            login_type = st.radio("Type de connexion",
-                ["👑 Administrateur", "👤 Créateur de formulaire"],
-                key="login_type", label_visibility="collapsed")
+        login_type = st.sidebar.radio(
+            "Type",
+            ["👑 Administrateur", "👤 Utilisateur"],
+            key="login_type",
+            label_visibility="collapsed"
+        )
 
-            if login_type == "👑 Administrateur":
-                pwd = st.text_input("Mot de passe admin", type="password", key="admin_pwd_input")
-                if st.button("Connexion Admin", key="btn_admin_login"):
-                    if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
-                        st.session_state.role = "admin"
-                        st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
-                        st.rerun()
-                    else:
-                        st.error("❌ Mot de passe incorrect")
-            else:
-                user_id = st.text_input("Votre identifiant", placeholder="Ex: prof_dupont", key="creator_id_input")
-                if st.button("Connexion Créateur", key="btn_creator_login"):
-                    if user_id.strip():
-                        st.session_state.role = "creator"
-                        st.session_state.user_id = user_id.strip()
-                        st.rerun()
-                    else:
-                        st.error("❌ Identifiant requis")
+        if login_type == "👑 Administrateur":
+            pwd = st.sidebar.text_input(
+                "Mot de passe",
+                type="password",
+                key="admin_pwd",
+                placeholder="Mot de passe admin"
+            )
+            if st.sidebar.button("→ Connexion Admin", key="btn_admin"):
+                if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
+                    st.session_state.role = "admin"
+                    st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
+                    st.rerun()
+                else:
+                    st.sidebar.error("❌ Mot de passe incorrect")
+        else:
+            user_id = st.sidebar.text_input(
+                "Votre identifiant",
+                key="user_id_input",
+                placeholder="Ex: prof_martin"
+            )
+            if st.sidebar.button("→ Se connecter", key="btn_user"):
+                if user_id.strip():
+                    st.session_state.role = "creator"
+                    st.session_state.user_id = user_id.strip()
+                    st.rerun()
+                else:
+                    st.sidebar.error("❌ Identifiant requis")
 
+        st.sidebar.markdown("</div>", unsafe_allow_html=True)
     else:
         role_label = "👑 Admin" if is_admin() else f"👤 {st.session_state.user_id}"
         st.sidebar.markdown(f"""
         <div style="background:rgba(255,255,255,0.1); border-radius:10px;
-            padding:0.8rem 1rem; margin-bottom:0.5rem;">
-            <div style="font-size:0.7rem; color:{t['sidebar_muted']}; text-transform:uppercase;
-                letter-spacing:0.08em;">Connecté en tant que</div>
-            <div style="color:white; font-weight:600; margin-top:3px;">{role_label}</div>
+            padding:0.8rem 1rem; margin-bottom:0.8rem;">
+            <div style="font-size:0.65rem; color:{t['sidebar_muted']};
+                text-transform:uppercase; letter-spacing:0.08em;">Connecté</div>
+            <div style="color:white; font-weight:600; margin-top:2px;">{role_label}</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.sidebar.button("🚪 Se déconnecter", key="btn_logout"):
+        if st.sidebar.button("🚪 Déconnexion", key="btn_logout"):
             st.session_state.role = "participant"
             st.session_state.user_id = None
             st.rerun()
 
 
-# ---------------------------------------------------------------------------
-# WIDGETS FORMULAIRE
-# ---------------------------------------------------------------------------
-
 def render_field(field: dict) -> Any:
-    """Génère le widget Streamlit pour un champ du schéma.
+    """Génère le widget pour un champ du schéma.
 
     Args:
         field: Dictionnaire décrivant un champ.
 
     Returns:
-        La valeur saisie.
+        Valeur saisie.
     """
     label: str = field.get("label", field["name"])
     field_type: str = field.get("type", "str")
@@ -497,13 +389,15 @@ def render_field(field: dict) -> Any:
         min_val = field.get("min_value")
         default_val = field.get("default", min_val if min_val is not None else 0)
         return st.number_input(full_label, step=1, value=default_val,
-                               min_value=min_val, max_value=field.get("max_value"), help=help_text)
+                               min_value=min_val, max_value=field.get("max_value"),
+                               help=help_text)
 
     if field_type == "float":
         min_v = field.get("min_value")
         max_v = field.get("max_value")
         default_val = float(field.get("default", min_v if min_v is not None else 0.0))
-        return st.number_input(full_label, step=field.get("step", 0.1), value=default_val,
+        return st.number_input(full_label, step=field.get("step", 0.1),
+                               value=default_val,
                                min_value=float(min_v) if min_v is not None else None,
                                max_value=float(max_v) if max_v is not None else None,
                                format="%.2f", help=help_text)
@@ -516,28 +410,16 @@ def render_field(field: dict) -> Any:
     return st.text_input(full_label, value=field.get("default", ""), help=help_text)
 
 
-# ---------------------------------------------------------------------------
-# STATISTIQUES
-# ---------------------------------------------------------------------------
-
 def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> None:
-    """Affiche le dashboard statistique enrichi.
+    """Affiche le dashboard statistique.
 
     Args:
         df: DataFrame pandas.
-        schema_fields: Liste des champs du schéma.
-        t: Dictionnaire du thème actif.
+        schema_fields: Champs du schéma.
+        t: Thème actif.
     """
     if df.empty:
-        st.markdown(f"""
-        <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:16px;
-            padding:3rem; text-align:center; margin:1rem 0;">
-            <div style="font-size:3rem;">📭</div>
-            <div style="font-size:1.1rem; font-weight:600; color:{t['text_secondary']}; margin-top:1rem;">
-                Aucune donnée collectée pour l'instant
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("📭 Aucune donnée collectée pour l'instant.")
         return
 
     numeric_fields = [f for f in schema_fields if f.get("type") in ("int", "float")]
@@ -546,7 +428,6 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> N
     completeness = round((df.notna().sum().sum() / (len(df) * len(df.columns))) * 100, 1)
     last_date = pd.to_datetime(df["created_at"]).max().strftime("%d/%m/%Y") if "created_at" in df.columns else "—"
 
-    # KPIs
     col1, col2, col3, col4 = st.columns(4)
     for col, val, label in [
         (col1, str(len(df)), "Réponses"),
@@ -556,52 +437,52 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> N
     ]:
         with col:
             st.markdown(f"""
-            <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:14px;
-                padding:1.2rem; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-                <div style="font-size:1.8rem; font-weight:800; color:{t['metric_value']};">{val}</div>
-                <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em;
+            <div style="background:{t['card']}; border:1px solid {t['border']};
+                border-radius:14px; padding:1.2rem; text-align:center;">
+                <div style="font-size:1.8rem; font-weight:800;
+                    color:{t['metric_value']};">{val}</div>
+                <div style="font-size:0.7rem; text-transform:uppercase;
                     color:{t['metric_label']}; margin-top:4px;">{label}</div>
             </div>
             """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
-
-    # FILTRES
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     df_filtered = df.copy()
+
     if categoric_fields:
         st.markdown(f"<div style='font-weight:700; color:{t['text']}; margin-bottom:0.8rem;'>🔍 Filtres</div>",
                     unsafe_allow_html=True)
-        filter_cols = st.columns(min(len(categoric_fields), 3))
+        fcols = st.columns(min(len(categoric_fields), 3))
         for i, field in enumerate(categoric_fields[:3]):
             name = field["name"]
             label = field.get("label", name)
             if name in df.columns:
                 unique_vals = df[name].dropna().unique().tolist()
                 if unique_vals:
-                    with filter_cols[i]:
-                        selected = st.multiselect(f"{label}", unique_vals, default=unique_vals, key=f"filter_{name}")
-                        if selected:
-                            df_filtered = df_filtered[df_filtered[name].isin(selected)]
-        st.caption(f"**{len(df_filtered)}** / **{len(df)}** réponses affichées")
+                    with fcols[i]:
+                        sel = st.multiselect(label, unique_vals, default=unique_vals, key=f"filter_{name}")
+                        if sel:
+                            df_filtered = df_filtered[df_filtered[name].isin(sel)]
+        st.caption(f"**{len(df_filtered)}** / **{len(df)}** réponses")
 
-    # NUMÉRIQUE
     if numeric_cols:
         st.markdown(f"<div style='font-weight:700; color:{t['text']}; margin:1.5rem 0 0.8rem;'>🔢 Analyse numérique</div>",
                     unsafe_allow_html=True)
         num_df = df_filtered[numeric_cols].apply(pd.to_numeric, errors="coerce")
         stats = num_df.describe().T
-        stats.index = [next((f.get("label", f["name"]) for f in numeric_fields if f["name"] == col), col) for col in stats.index]
+        stats.index = [next((f.get("label", f["name"]) for f in numeric_fields if f["name"] == c), c)
+                       for c in stats.index]
         stats.columns = ["Nb", "Moyenne", "Écart-type", "Min", "Q25%", "Médiane", "Q75%", "Max"]
         st.dataframe(stats.round(2), use_container_width=True)
 
-        dist_cols = st.columns(min(len(numeric_cols), 2))
+        dcols = st.columns(min(len(numeric_cols), 2))
         for i, field in enumerate(numeric_fields):
             name = field["name"]
             label = field.get("label", name)
             if name in df_filtered.columns:
                 series = pd.to_numeric(df_filtered[name], errors="coerce").dropna()
                 if not series.empty:
-                    with dist_cols[i % 2]:
+                    with dcols[i % 2]:
                         st.markdown(f"**{label}**")
                         st.bar_chart(series.value_counts(bins=min(10, len(series.unique()))).sort_index())
                         ca, cb, cc = st.columns(3)
@@ -609,37 +490,15 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> N
                         cb.metric("Médiane", f"{series.median():.2f}")
                         cc.metric("Écart-type", f"{series.std():.2f}")
 
-        if len(numeric_cols) >= 1 and categoric_fields:
-            st.markdown(f"<div style='font-weight:700; color:{t['text']}; margin:1.5rem 0 0.8rem;'>🔀 Tableau croisé</div>",
-                        unsafe_allow_html=True)
-            col_x, col_y = st.columns(2)
-            with col_x:
-                selected_num = st.selectbox("Variable numérique",
-                    [f["name"] for f in numeric_fields],
-                    format_func=lambda x: next((f.get("label", f["name"]) for f in numeric_fields if f["name"] == x), x),
-                    key="crosstab_num")
-            with col_y:
-                selected_cat = st.selectbox("Variable catégorielle",
-                    [f["name"] for f in categoric_fields if f["name"] in df_filtered.columns],
-                    format_func=lambda x: next((f.get("label", f["name"]) for f in categoric_fields if f["name"] == x), x),
-                    key="crosstab_cat")
-            if selected_num and selected_cat:
-                cross = (df_filtered.groupby(selected_cat)[selected_num]
-                    .apply(lambda s: pd.to_numeric(s, errors="coerce").mean())
-                    .round(2).reset_index())
-                num_label = next((f.get("label", f["name"]) for f in numeric_fields if f["name"] == selected_num), selected_num)
-                cat_label = next((f.get("label", f["name"]) for f in categoric_fields if f["name"] == selected_cat), selected_cat)
-                cross.columns = [cat_label, f"Moyenne — {num_label}"]
-                st.dataframe(cross, use_container_width=True, hide_index=True)
-                st.bar_chart(cross.set_index(cat_label))
-
         if len(numeric_cols) >= 2:
             st.markdown(f"<div style='font-weight:700; color:{t['text']}; margin:1.5rem 0 0.8rem;'>🔗 Corrélations</div>",
                         unsafe_allow_html=True)
-            corr = num_df.rename(columns={f["name"]: f.get("label", f["name"]) for f in numeric_fields}).corr().round(2)
-            st.dataframe(corr.style.background_gradient(cmap="RdYlGn", vmin=-1, vmax=1), use_container_width=True)
+            corr = num_df.rename(columns={
+                f["name"]: f.get("label", f["name"]) for f in numeric_fields
+            }).corr().round(2)
+            st.dataframe(corr.style.background_gradient(cmap="RdYlGn", vmin=-1, vmax=1),
+                         use_container_width=True)
 
-    # CATÉGORIELLES
     if categoric_fields:
         st.markdown(f"<div style='font-weight:700; color:{t['text']}; margin:1.5rem 0 0.8rem;'>🏷️ Répartitions</div>",
                     unsafe_allow_html=True)
@@ -650,14 +509,13 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> N
                 counts = df_filtered[name].value_counts().reset_index()
                 counts.columns = [label, "Nombre"]
                 counts["Pourcentage"] = (counts["Nombre"] / counts["Nombre"].sum() * 100).round(1)
-                col_a, col_b = st.columns(2)
-                with col_a:
+                ca, cb = st.columns(2)
+                with ca:
                     st.markdown(f"**{label}**")
                     st.dataframe(counts, use_container_width=True, hide_index=True)
-                with col_b:
+                with cb:
                     st.bar_chart(counts.set_index(label)["Nombre"])
 
-    # TEMPOREL
     if "created_at" in df_filtered.columns:
         st.markdown(f"<div style='font-weight:700; color:{t['text']}; margin:1.5rem 0 0.8rem;'>📅 Évolution</div>",
                     unsafe_allow_html=True)
@@ -668,24 +526,20 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> N
         st.line_chart(daily.set_index("Date"))
 
 
-# ---------------------------------------------------------------------------
-# EXPORT
-# ---------------------------------------------------------------------------
-
-def export_dataframe(df: pd.DataFrame, domain: str, t: dict) -> None:
-    """Affiche les boutons d'export.
+def export_dataframe(df: pd.DataFrame, domain: str) -> None:
+    """Boutons d'export CSV et Excel.
 
     Args:
         df: DataFrame à exporter.
         domain: Nom du domaine.
-        t: Thème actif.
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_name = f"{domain}_{timestamp}"
     col1, col2 = st.columns(2)
     with col1:
         st.download_button("⬇ CSV", data=df.to_csv(index=False).encode("utf-8-sig"),
-                           file_name=f"{base_name}.csv", mime="text/csv", use_container_width=True)
+                           file_name=f"{base_name}.csv", mime="text/csv",
+                           use_container_width=True)
     with col2:
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
@@ -696,29 +550,23 @@ def export_dataframe(df: pd.DataFrame, domain: str, t: dict) -> None:
                            use_container_width=True)
 
 
-# ---------------------------------------------------------------------------
-# ONGLET ADMIN
-# ---------------------------------------------------------------------------
-
 def render_admin_tab(conn, t: dict) -> None:
-    """Affiche l'onglet de création et gestion des formulaires.
+    """Onglet de création et gestion des formulaires.
 
     Args:
-        conn: Connexion psycopg2 active.
+        conn: Connexion psycopg2.
         t: Thème actif.
     """
-    can_create = st.session_state.role in ("admin", "creator")
-
-    if not can_create:
+    if not is_logged_in():
         st.markdown(f"""
         <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-            border-radius:16px; padding:2.5rem; text-align:center; margin:1rem 0;">
-            <div style="font-size:2.5rem;">🔐</div>
-            <div style="font-size:1.1rem; font-weight:700; color:{t['text']}; margin-top:1rem;">
-                Connexion requise
+            border-radius:16px; padding:3rem; text-align:center;">
+            <div style="font-size:3rem;">🔐</div>
+            <div style="font-size:1.2rem; font-weight:700; color:{t['text']}; margin-top:1rem;">
+                Connectez-vous pour créer un formulaire
             </div>
             <div style="color:{t['text_secondary']}; font-size:0.85rem; margin-top:0.5rem;">
-                Connectez-vous via la sidebar pour créer ou gérer des formulaires.
+                Utilisez le panneau de connexion dans la sidebar à gauche.
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -726,102 +574,115 @@ def render_admin_tab(conn, t: dict) -> None:
 
     st.markdown(f"""
     <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-        border-radius:16px; padding:1.8rem; margin-bottom:1.5rem;">
-        <div style="font-size:1.2rem; font-weight:700; color:{t['text']}; margin-bottom:0.3rem;">
+        border-radius:16px; padding:1.5rem; margin-bottom:1.5rem;">
+        <div style="font-size:1.2rem; font-weight:700; color:{t['text']};">
             🚀 Créer un nouveau formulaire
         </div>
-        <div style="color:{t['text_secondary']}; font-size:0.85rem;">
-            Votre formulaire sera sauvegardé définitivement dans Supabase.
+        <div style="color:{t['text_secondary']}; font-size:0.85rem; margin-top:0.3rem;">
+            Connecté en tant que : <strong>{st.session_state.user_id}</strong>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
-        form_title = st.text_input("📌 Titre de l'étude *", placeholder="Ex : Bien-être étudiant 2025")
-        domain_name = st.text_input("🔑 Identifiant unique *", placeholder="Ex : bienetre_2025")
+        form_title = st.text_input("📌 Titre *", placeholder="Ex : Bien-être étudiant 2025")
+        domain_name = st.text_input("🔑 Identifiant unique *", placeholder="Ex : bienetre_2025",
+                                    help="Lettres, chiffres, underscores uniquement")
     with col2:
         form_description = st.text_area("📝 Description", placeholder="Objectif de l'étude...", height=100)
-        creator_password = st.text_input("🔒 Mot de passe gestionnaire *",
-            type="password", placeholder="Pour gérer votre formulaire",
-            help="Retenez ce mot de passe, il vous permettra de gérer votre formulaire.")
+        creator_pwd = st.text_input("🔒 Mot de passe du formulaire *", type="password",
+                                    placeholder="Pour protéger votre formulaire",
+                                    help="Notez ce mot de passe — il vous servira à gérer ce formulaire")
 
     nb_fields = st.number_input("Nombre de champs", min_value=1, max_value=20, value=3, step=1)
     fields = []
 
     for i in range(int(nb_fields)):
-        st.markdown(f"""
-        <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:12px;
-            padding:1.2rem; margin-bottom:0.8rem;">
-            <div style="font-weight:600; color:{t['accent']}; margin-bottom:0.8rem;">Champ {i+1}</div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown(f"""
+            <div style="background:{t['card']}; border:1px solid {t['border']};
+                border-radius:12px; padding:1rem; margin-bottom:0.8rem;">
+                <div style="font-weight:600; color:{t['accent']}; margin-bottom:0.5rem;">
+                    Champ {i+1}
+                </div>
+            """, unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            field_label = st.text_input("Libellé *", placeholder="Ex: Âge", key=f"label_{i}")
-            field_name = st.text_input("Nom interne *", placeholder="Ex: age", key=f"name_{i}")
-        with col2:
-            field_type = st.selectbox("Type", ["Texte", "Nombre entier", "Nombre décimal", "Date", "Liste déroulante"], key=f"type_{i}")
-            field_required = st.checkbox("Obligatoire", value=True, key=f"required_{i}")
-        with col3:
-            field_help = st.text_input("Aide", placeholder="Optionnel", key=f"help_{i}")
-            field_options, field_min, field_max = "", None, None
-            if field_type == "Liste déroulante":
-                field_options = st.text_input("Options (virgules)", placeholder="Oui, Non", key=f"options_{i}")
-            elif field_type in ("Nombre entier", "Nombre décimal"):
-                field_min = st.number_input("Min", value=0, key=f"min_{i}")
-                field_max = st.number_input("Max", value=100, key=f"max_{i}")
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                fl = st.text_input("Libellé *", placeholder="Ex: Âge", key=f"label_{i}")
+                fn = st.text_input("Nom interne *", placeholder="Ex: age", key=f"name_{i}")
+            with c2:
+                ft = st.selectbox("Type", ["Texte", "Nombre entier", "Nombre décimal",
+                                           "Date", "Liste déroulante"], key=f"type_{i}")
+                fr = st.checkbox("Obligatoire", value=True, key=f"req_{i}")
+            with c3:
+                fh = st.text_input("Aide", placeholder="Optionnel", key=f"help_{i}")
+                fo, fmin, fmax = "", None, None
+                if ft == "Liste déroulante":
+                    fo = st.text_input("Options (virgules)", placeholder="Oui, Non", key=f"opt_{i}")
+                elif ft in ("Nombre entier", "Nombre décimal"):
+                    fmin = st.number_input("Min", value=0, key=f"min_{i}")
+                    fmax = st.number_input("Max", value=100, key=f"max_{i}")
 
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-        type_map = {"Texte": "str", "Nombre entier": "int", "Nombre décimal": "float",
-                    "Date": "date", "Liste déroulante": "str"}
-        fd: dict[str, Any] = {"name": field_name.strip().replace(" ", "_"),
-                               "label": field_label.strip(),
-                               "type": type_map[field_type], "required": field_required}
-        if field_help: fd["help"] = field_help
-        if field_type == "Liste déroulante" and field_options:
-            fd["options"] = [o.strip() for o in field_options.split(",") if o.strip()]
-        if field_type in ("Nombre entier", "Nombre décimal") and field_min is not None:
-            fd["min_value"] = field_min
-            fd["max_value"] = field_max
-        fields.append(fd)
+            type_map = {"Texte": "str", "Nombre entier": "int", "Nombre décimal": "float",
+                        "Date": "date", "Liste déroulante": "str"}
+            fd: dict[str, Any] = {
+                "name": fn.strip().replace(" ", "_"),
+                "label": fl.strip(),
+                "type": type_map[ft],
+                "required": fr,
+            }
+            if fh: fd["help"] = fh
+            if ft == "Liste déroulante" and fo:
+                fd["options"] = [o.strip() for o in fo.split(",") if o.strip()]
+            if ft in ("Nombre entier", "Nombre décimal") and fmin is not None:
+                fd["min_value"] = fmin
+                fd["max_value"] = fmax
+            fields.append(fd)
 
-    if st.button("🚀 Créer et publier", use_container_width=True):
+    if st.button("🚀 Créer et publier le formulaire", use_container_width=True):
         errors = []
         if not form_title.strip(): errors.append("Titre obligatoire.")
         if not domain_name.strip(): errors.append("Identifiant obligatoire.")
-        if not domain_name.strip().replace("_", "").isalnum(): errors.append("Identifiant : lettres, chiffres, underscores.")
-        if not creator_password.strip(): errors.append("Mot de passe gestionnaire obligatoire.")
+        if not domain_name.strip().replace("_", "").isalnum():
+            errors.append("Identifiant : lettres, chiffres, underscores uniquement.")
+        if not creator_pwd.strip(): errors.append("Mot de passe du formulaire obligatoire.")
         for i, f in enumerate(fields):
             if not f.get("label"): errors.append(f"Libellé champ {i+1} manquant.")
             if not f.get("name"): errors.append(f"Nom interne champ {i+1} manquant.")
 
         if errors:
-            for err in errors: st.error(f"❌ {err}")
+            for err in errors:
+                st.error(f"❌ {err}")
         else:
-            schema = {"title": form_title.strip(), "description": form_description.strip(),
-                      "fields": [f for f in fields if f.get("name") and f.get("label")]}
+            schema = {
+                "title": form_title.strip(),
+                "description": form_description.strip(),
+                "fields": [f for f in fields if f.get("name") and f.get("label")],
+            }
             try:
                 save_schema_db(conn, domain_name.strip(), schema,
                                creator_id=st.session_state.user_id,
-                               creator_password=creator_password.strip(),
+                               creator_password=creator_pwd.strip(),
                                is_public=False)
                 share_url = f"{get_app_url()}/?study={domain_name.strip()}"
-                st.success(f"✅ Formulaire **{form_title}** créé et sauvegardé définitivement !")
+                st.success(f"✅ Formulaire **{form_title}** créé avec succès !")
                 st.markdown(f"""
                 <div style="background:{t['secondary_bg']}; border:1.5px solid {t['border']};
                     border-radius:12px; padding:1.5rem; margin-top:1rem;">
                     <div style="font-weight:700; color:{t['accent']}; margin-bottom:0.5rem;">
-                        🔗 Lien de partage de votre étude
+                        🔗 Lien à partager aux participants
                     </div>
                     <div style="background:{t['card']}; border:1px solid {t['border']};
                         border-radius:8px; padding:0.8rem; font-family:monospace;
-                        font-size:0.82rem; color:{t['accent']}; word-break:break-all;">
+                        font-size:0.85rem; color:{t['accent']}; word-break:break-all;">
                         {share_url}
                     </div>
                     <div style="color:{t['text_secondary']}; font-size:0.78rem; margin-top:0.8rem;">
-                        ⚠️ Partagez uniquement ce lien aux participants de votre étude.
+                        ⚠️ Envoyez ce lien uniquement à vos participants.
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -830,38 +691,36 @@ def render_admin_tab(conn, t: dict) -> None:
             except Exception as exc:
                 st.error(f"❌ Erreur : {exc}")
 
-    st.markdown(f"<div style='height:1.5rem'></div>", unsafe_allow_html=True)
     st.markdown(f"""
-    <div style="font-weight:700; color:{t['text']}; font-size:1.05rem; margin-bottom:1rem;
-        padding-bottom:0.5rem; border-bottom:2px solid {t['divider']};">
-        📁 Mes formulaires
+    <div style="font-weight:700; color:{t['text']}; font-size:1.05rem;
+        margin:2rem 0 1rem; padding-bottom:0.5rem; border-bottom:2px solid {t['divider']};">
+        📁 {"Tous les formulaires" if is_admin() else "Mes formulaires"}
     </div>
     """, unsafe_allow_html=True)
 
-    if is_admin():
-        schemas = load_schemas_db(conn)
-    else:
-        schemas = load_schemas_for_user(conn, st.session_state.user_id)
+    schemas = load_schemas_db(conn) if is_admin() else load_schemas_for_user(conn, st.session_state.user_id)
 
     if not schemas:
-        st.info("Aucun formulaire créé pour l'instant.")
+        st.info("Aucun formulaire pour l'instant. Créez-en un ci-dessus !")
     else:
         for domain, schema in schemas.items():
             gradient = get_domain_gradient(domain)
             share_url = f"{get_app_url()}/?study={domain}"
             creator = schema.get("_creator_id", "inconnu")
 
-            col_info, col_actions = st.columns([3, 1])
+            col_info, col_del = st.columns([4, 1])
             with col_info:
                 st.markdown(f"""
-                <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:14px;
-                    padding:1.5rem; position:relative; overflow:hidden; margin-bottom:0.8rem;">
+                <div style="background:{t['card']}; border:1px solid {t['border']};
+                    border-radius:14px; padding:1.5rem; position:relative;
+                    overflow:hidden; margin-bottom:0.8rem;">
                     <div style="position:absolute; top:0; left:0; width:4px; height:100%;
-                        background:{gradient}; border-radius:14px 0 0 14px;"></div>
-                    <div style="padding-left:0.8rem;">
-                        <div style="font-family:'Playfair Display',serif; font-size:1.1rem;
-                            font-weight:700; color:{t['text']};">{schema.get('title', domain)}</div>
-                        <div style="color:{t['text_secondary']}; font-size:0.8rem; margin-top:0.3rem;">
+                        background:{gradient};"></div>
+                    <div style="padding-left:1rem;">
+                        <div style="font-weight:700; color:{t['text']}; font-size:1.05rem;">
+                            {schema.get('title', domain)}
+                        </div>
+                        <div style="color:{t['text_secondary']}; font-size:0.8rem; margin-top:0.2rem;">
                             {schema.get('description', '') or 'Aucune description'}
                         </div>
                         <div style="margin-top:0.8rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
@@ -875,7 +734,7 @@ def render_admin_tab(conn, t: dict) -> None:
                             </span>
                         </div>
                         <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-                            border-radius:8px; padding:0.6rem 0.8rem; margin-top:0.8rem;
+                            border-radius:8px; padding:0.5rem 0.8rem; margin-top:0.8rem;
                             font-family:monospace; font-size:0.75rem; color:{t['accent']};
                             word-break:break-all;">
                             🔗 {share_url}
@@ -884,21 +743,17 @@ def render_admin_tab(conn, t: dict) -> None:
                 </div>
                 """, unsafe_allow_html=True)
 
-            with col_actions:
-                st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-                if is_admin() or st.session_state.user_id == schema.get("_creator_id"):
-                    if st.button("🗑️ Supprimer", key=f"del_{domain}", use_container_width=True):
-                        try:
-                            delete_schema_db(conn, domain)
-                            st.success(f"Supprimé !")
-                            st.rerun()
-                        except Exception as exc:
-                            st.error(f"❌ {exc}")
+            with col_del:
+                st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+                if st.button("🗑️", key=f"del_{domain}", use_container_width=True,
+                             help="Supprimer ce formulaire"):
+                    try:
+                        delete_schema_db(conn, domain)
+                        st.success("Supprimé !")
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(f"❌ {exc}")
 
-
-# ---------------------------------------------------------------------------
-# APPLICATION PRINCIPALE
-# ---------------------------------------------------------------------------
 
 def main() -> None:
     """Point d'entrée principal."""
@@ -924,22 +779,19 @@ def main() -> None:
             background:rgba(255,255,255,0.06); border-radius:50%;"></div>
         <div style="position:absolute; bottom:-60px; right:100px; width:180px; height:180px;
             background:rgba(255,255,255,0.04); border-radius:50%;"></div>
-        <div style="position:absolute; top:20px; right:200px; width:80px; height:80px;
-            background:rgba(255,255,255,0.05); border-radius:50%;"></div>
         <div style="position:relative;">
             <div style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
                 color:rgba(255,255,255,0.6); margin-bottom:0.5rem;">
                 Plateforme de collecte de données
             </div>
-            <div style="font-family:'Playfair Display',serif; font-size:2.5rem; font-weight:800;
-                color:white; line-height:1.1; margin-bottom:0.5rem;">
+            <div style="font-family:'Playfair Display',serif; font-size:2.5rem;
+                font-weight:800; color:white; line-height:1.1; margin-bottom:0.5rem;">
                 DataCollect
                 <span style="display:inline-block; background:rgba(255,255,255,0.2);
                     color:white; font-size:0.6rem; font-weight:600; padding:4px 12px;
                     border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
-                    vertical-align:middle; margin-left:10px; border:1px solid rgba(255,255,255,0.3);">
-                    Universal
-                </span>
+                    vertical-align:middle; margin-left:10px;
+                    border:1px solid rgba(255,255,255,0.3);">Universal</span>
             </div>
             <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;">
                 Réalisé par Botagne Julien Claude Daniel · Moteur piloté par schéma
@@ -952,9 +804,11 @@ def main() -> None:
         st.markdown(f"""
         <div style="padding:1.2rem 0 0.8rem;">
             <div style="font-family:'Playfair Display',serif; font-size:1.2rem;
-                font-weight:700; color:{t['sidebar_text']};">📋 DataCollect</div>
-            <div style="font-size:0.65rem; color:{t['sidebar_muted']}; letter-spacing:0.1em;
-                text-transform:uppercase; margin-top:2px;">Universal Platform</div>
+                font-weight:700; color:white;">📋 DataCollect</div>
+            <div style="font-size:0.65rem; color:{t['sidebar_muted']};
+                letter-spacing:0.1em; text-transform:uppercase; margin-top:2px;">
+                Universal Platform
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -967,53 +821,62 @@ def main() -> None:
         t = THEMES[st.session_state.theme]
         apply_theme(t)
 
-        st.markdown(f"<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
                     unsafe_allow_html=True)
 
-        render_auth_sidebar()
+        render_sidebar_auth(t)
 
-        st.markdown(f"<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
                     unsafe_allow_html=True)
 
-        if is_admin():
-            all_schemas = load_schemas_db(conn)
-        elif st.session_state.role == "creator":
-            all_schemas = load_schemas_for_user(conn, st.session_state.user_id)
+        if is_logged_in():
+            all_schemas = load_schemas_db(conn) if is_admin() else load_schemas_for_user(conn, st.session_state.user_id)
+            available = list(all_schemas.keys())
+            if available:
+                default_idx = available.index(url_study) if url_study and url_study in available else 0
+                selected_domain = st.selectbox(
+                    "📋 Mes formulaires",
+                    available,
+                    index=default_idx,
+                    format_func=lambda x: all_schemas[x].get("title", x)
+                )
+            else:
+                selected_domain = None
+                st.info("Aucun formulaire. Créez-en un dans Admin.")
         else:
             all_schemas = {}
-
-        available = list(all_schemas.keys())
-
-        if url_study:
-            schema_from_url = load_schema_by_domain(conn, url_study)
-            domain = url_study if schema_from_url else None
-        elif available:
-            if url_study and url_study in available:
-                default_idx = available.index(url_study)
-            else:
-                default_idx = 0
-            domain = st.selectbox("Formulaire actif", available, index=default_idx,
-                                  format_func=lambda x: all_schemas[x].get("title", x))
-        else:
-            domain = None
-            if st.session_state.role == "participant":
+            selected_domain = None
+            if not url_study:
                 st.markdown(f"""
                 <div style="background:rgba(255,255,255,0.08); border-radius:10px;
-                    padding:1rem; margin-top:0.5rem;">
-                    <div style="color:{t['sidebar_muted']}; font-size:0.8rem; text-align:center;">
-                        Utilisez un lien d'étude pour accéder à un formulaire.
+                    padding:1rem; margin-top:0.5rem; text-align:center;">
+                    <div style="color:rgba(255,255,255,0.7); font-size:0.8rem;">
+                        Connectez-vous pour gérer vos formulaires<br>
+                        ou utilisez un lien d'étude.
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-            else:
-                st.warning("Aucun formulaire. Créez-en un dans Admin.")
 
         st.markdown(f"""
         <div style="font-size:0.65rem; color:{t['sidebar_muted']}; text-align:center;
-            padding:1rem 0; margin-top:auto;">
-            🔒 Données permanentes · Supabase PostgreSQL
+            padding:1rem 0;">
+            🔒 Données permanentes · Supabase
         </div>
         """, unsafe_allow_html=True)
+
+    if url_study:
+        schema = load_schema_by_domain(conn, url_study)
+        if schema:
+            domain = url_study
+        else:
+            st.error("❌ Formulaire introuvable. Le lien est invalide.")
+            st.stop()
+    elif is_logged_in() and selected_domain:
+        domain = selected_domain
+        schema = all_schemas.get(domain)
+    else:
+        domain = None
+        schema = None
 
     tab_form, tab_data, tab_stats, tab_admin = st.tabs([
         "✏️  Saisie", "📋  Données", "📊  Statistiques", "⚙️  Admin"
@@ -1022,30 +885,16 @@ def main() -> None:
     with tab_admin:
         render_admin_tab(conn, t)
 
-    if url_study:
-        schema = load_schema_by_domain(conn, url_study)
-        if schema:
-            domain = url_study
-        else:
-            with tab_form:
-                st.error("❌ Formulaire introuvable. Le lien est invalide ou le formulaire a été supprimé.")
-            return
-    elif domain and domain in all_schemas:
-        schema = all_schemas[domain]
-    else:
-        schema = None
-
     if not schema:
         with tab_form:
             st.markdown(f"""
-            <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:16px;
-                padding:3rem; text-align:center; margin:1rem 0;">
+            <div style="background:{t['card']}; border:1px solid {t['border']};
+                border-radius:16px; padding:3rem; text-align:center;">
                 <div style="font-size:3rem;">📋</div>
-                <div style="font-size:1.1rem; font-weight:600; color:{t['text_secondary']}; margin-top:1rem;">
-                    Aucun formulaire sélectionné
-                </div>
-                <div style="color:{t['text_secondary']}; font-size:0.85rem; margin-top:0.5rem;">
-                    Utilisez un lien d'étude ou connectez-vous pour accéder à vos formulaires.
+                <div style="font-size:1.1rem; font-weight:600;
+                    color:{t['text_secondary']}; margin-top:1rem;">
+                    {"Connectez-vous et sélectionnez un formulaire"
+                     if not is_logged_in() else "Sélectionnez ou créez un formulaire"}
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -1071,27 +920,25 @@ def main() -> None:
 
     with tab_form:
         st.markdown(f"""
-        <div style="background:{domain_gradient}; border-radius:16px; padding:2rem 2.5rem;
-            margin-bottom:1.5rem; position:relative; overflow:hidden;">
+        <div style="background:{domain_gradient}; border-radius:16px;
+            padding:2rem 2.5rem; margin-bottom:1.5rem; position:relative; overflow:hidden;">
             <div style="position:absolute; top:-30px; right:-30px; width:160px; height:160px;
                 background:rgba(255,255,255,0.07); border-radius:50%;"></div>
-            <div style="position:absolute; bottom:-40px; right:80px; width:100px; height:100px;
-                background:rgba(255,255,255,0.05); border-radius:50%;"></div>
             <div style="position:relative;">
                 <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
-                    color:rgba(255,255,255,0.6); margin-bottom:0.4rem;">📋 Formulaire d'étude</div>
-                <div style="font-family:'Playfair Display',serif; font-size:1.8rem; font-weight:700;
-                    color:white; margin-bottom:0.4rem;">{form_title}</div>
+                    color:rgba(255,255,255,0.6); margin-bottom:0.4rem;">📋 Formulaire</div>
+                <div style="font-family:'Playfair Display',serif; font-size:1.8rem;
+                    font-weight:700; color:white; margin-bottom:0.4rem;">{form_title}</div>
                 <div style="color:rgba(255,255,255,0.8); font-size:0.85rem;">
                     {form_description or 'Remplissez le formulaire ci-dessous.'}
                 </div>
                 <div style="margin-top:1rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
-                    <span style="background:rgba(255,255,255,0.2); color:white; padding:3px 12px;
-                        border-radius:20px; font-size:0.72rem; font-weight:500;">
+                    <span style="background:rgba(255,255,255,0.2); color:white;
+                        padding:3px 12px; border-radius:20px; font-size:0.72rem;">
                         {len(schema_fields)} champs
                     </span>
-                    <span style="background:rgba(255,255,255,0.2); color:white; padding:3px 12px;
-                        border-radius:20px; font-size:0.72rem; font-weight:500;">
+                    <span style="background:rgba(255,255,255,0.2); color:white;
+                        padding:3px 12px; border-radius:20px; font-size:0.72rem;">
                         🔒 Données permanentes
                     </span>
                 </div>
@@ -1100,20 +947,19 @@ def main() -> None:
 
         <div style="background:{t['secondary_bg']}; border:1.5px solid {t['border']};
             border-radius:12px; padding:1.2rem 1.5rem; margin-bottom:1.5rem;">
-            <div style="font-weight:600; color:{t['accent']}; font-size:0.85rem; margin-bottom:0.4rem;">
-                🔗 Partager cette étude
-            </div>
-            <div style="background:{t['card']}; border:1px solid {t['border']}; border-radius:8px;
-                padding:0.7rem 1rem; font-family:monospace; font-size:0.78rem;
-                color:{t['accent']}; word-break:break-all;">
+            <div style="font-weight:600; color:{t['accent']}; font-size:0.85rem;
+                margin-bottom:0.4rem;">🔗 Partager cette étude</div>
+            <div style="background:{t['card']}; border:1px solid {t['border']};
+                border-radius:8px; padding:0.7rem 1rem; font-family:monospace;
+                font-size:0.78rem; color:{t['accent']}; word-break:break-all;">
                 {share_url}
             </div>
         </div>
         """, unsafe_allow_html=True)
 
         with st.form(key=f"form_{domain}", clear_on_submit=True):
-            field_chunks = [schema_fields[i:i+2] for i in range(0, len(schema_fields), 2)]
             raw_values: dict[str, Any] = {}
+            field_chunks = [schema_fields[i:i+2] for i in range(0, len(schema_fields), 2)]
             for chunk in field_chunks:
                 cols = st.columns(len(chunk))
                 for j, field in enumerate(chunk):
@@ -1133,7 +979,7 @@ def main() -> None:
                         st.markdown(f"• {err}")
                 else:
                     row_id = insert_row(conn, domain, instance.model_dump())
-                    st.success(f"✅ Réponse #{row_id} enregistrée ! Merci pour votre participation.")
+                    st.success(f"✅ Réponse #{row_id} enregistrée ! Merci.")
                     st.balloons()
             except Exception as exc:
                 st.error(f"❌ Erreur : {exc}")
@@ -1142,20 +988,10 @@ def main() -> None:
 
     with tab_data:
         domain_creator = schema.get("_creator_id", "")
-        if not is_creator(domain_creator) and not url_study:
-            st.warning("🔐 Accès réservé au créateur du formulaire et à l'administrateur.")
+        can_access = is_admin() or st.session_state.user_id == domain_creator
+        if not can_access:
+            st.warning("🔐 Accès réservé au créateur et à l'administrateur.")
         else:
-            st.markdown(f"""
-            <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-                border-radius:14px; padding:1.5rem; margin-bottom:1rem;">
-                <div style="font-family:'Playfair Display',serif; font-size:1.2rem;
-                    font-weight:700; color:{t['text']};">{form_title}</div>
-                <div style="color:{t['text_secondary']}; font-size:0.82rem; margin-top:0.3rem;">
-                    {form_description or ''}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
             try:
                 df = fetch_all(conn, domain)
             except Exception as exc:
@@ -1166,34 +1002,32 @@ def main() -> None:
                 st.info("📭 Aucune donnée collectée pour l'instant.")
             else:
                 st.markdown(f"""
-                <span style="background:{t['tag_bg']}; color:{t['tag_text']}; padding:4px 14px;
-                    border-radius:20px; font-weight:600; font-size:0.85rem;">
+                <span style="background:{t['tag_bg']}; color:{t['tag_text']};
+                    padding:4px 14px; border-radius:20px; font-weight:600; font-size:0.85rem;">
                     {len(df)} réponse(s)
                 </span>
                 """, unsafe_allow_html=True)
                 st.markdown("<div style='height:0.8rem'></div>", unsafe_allow_html=True)
                 st.dataframe(df, use_container_width=True, hide_index=True)
-                export_dataframe(df, domain, t)
+                export_dataframe(df, domain)
 
     with tab_stats:
         domain_creator = schema.get("_creator_id", "")
-        if not is_creator(domain_creator) and not url_study:
-            st.warning("🔐 Accès réservé au créateur du formulaire et à l'administrateur.")
+        can_access = is_admin() or st.session_state.user_id == domain_creator
+        if not can_access:
+            st.warning("🔐 Accès réservé au créateur et à l'administrateur.")
         else:
             st.markdown(f"""
-            <div style="background:{domain_gradient}; border-radius:14px; padding:1.5rem 2rem;
-                margin-bottom:1.5rem; position:relative; overflow:hidden;">
-                <div style="position:relative;">
-                    <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
-                        color:rgba(255,255,255,0.6); margin-bottom:0.3rem;">
-                        📊 Tableau de bord analytique
-                    </div>
-                    <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
-                        font-weight:700; color:white;">{form_title}</div>
+            <div style="background:{domain_gradient}; border-radius:14px;
+                padding:1.5rem 2rem; margin-bottom:1.5rem;">
+                <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
+                    color:rgba(255,255,255,0.6); margin-bottom:0.3rem;">
+                    📊 Tableau de bord analytique
                 </div>
+                <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
+                    font-weight:700; color:white;">{form_title}</div>
             </div>
             """, unsafe_allow_html=True)
-
             try:
                 df_stats = fetch_all(conn, domain)
                 render_statistics(df_stats, schema_fields, t)
@@ -1203,3 +1037,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+     
