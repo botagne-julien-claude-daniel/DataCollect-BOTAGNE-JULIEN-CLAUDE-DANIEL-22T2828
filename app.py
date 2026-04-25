@@ -154,182 +154,6 @@ def apply_theme(t: dict) -> None:
     [data-testid="stSidebar"] {{
         background: {t['sidebar_bg']} !important;
         border-right: none !important;
-    }}
-    [data-testid="stSidebar"] * {{
-        color: {t['sidebar_text']} !important;
-    }}
-    [data-testid="stSidebar"] .stSelectbox > div > div,
-    [data-testid="stSidebar"] .stTextInput > div > div > input {{
-        background: rgba(255,255,255,0.12) !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        color: white !important;
-    }}
-
-    .stTabs [data-baseweb="tab-list"] {{
-        background: {t['tab_bg']} !important;
-        border: 1px solid {t['border']} !important;
-        border-radius: 14px !important;
-        padding: 5px !important;
-        gap: 3px !important;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        background: transparent !important;
-        color: {t['text_secondary']} !important;
-        border-radius: 10px !important;
-        font-size: 0.78rem !important;
-        font-weight: 500 !important;
-        padding: 0.5rem 1rem !important;
-    }}
-    .stTabs [aria-selected="true"] {{
-        background: {t['tab_selected']} !important;
-        color: white !important;
-    }}
-
-    input, textarea, select {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-    }}
-    .stTextInput > div > div > input {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-        border: 1.5px solid {t['border']} !important;
-        border-radius: 8px !important;
-    }}
-    .stTextInput > div > div > input:focus {{
-        border-color: {t['accent']} !important;
-        box-shadow: 0 0 0 3px {t['accent']}22 !important;
-    }}
-    .stTextArea > div > div > textarea {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-        border: 1.5px solid {t['border']} !important;
-        border-radius: 8px !important;
-    }}
-    .stSelectbox > div > div {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-        border: 1.5px solid {t['border']} !important;
-        border-radius: 8px !important;
-    }}
-def apply_theme(t: dict) -> None:
-    """Applique le thème via CSS.
-
-    Args:
-        t: Dictionnaire de couleurs.
-    """
-    st.markdown(f"""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
-
-    html, body, [class*="css"] {{
-        font-family: 'Inter', sans-serif !important;
-        background-color: {t['bg']} !important;
-        color: {t['text']} !important;
-    }}
-
-    #MainMenu, footer, header,
-    [data-testid="stToolbar"],
-    .viewerBadge_container__1QSob,
-    .viewerBadge_link__1S137,
-    a[href*="github"],
-    button[title*="GitHub"],
-    [data-testid="stDecoration"] {{
-        display: none !important;
-        visibility: hidden !important;
-    }}
-
-    [data-testid="stSidebar"] {{
-        background: {t['sidebar_bg']} !important;
-        border-right: none !important;
-    }}
-    [data-testid="stSidebar"] * {{
-        color: {t['sidebar_text']} !important;
-    }}
-    [data-testid="stSidebar"] .stSelectbox > div > div,
-    [data-testid="stSidebar"] .stTextInput > div > div > input {{
-        background: rgba(255,255,255,0.12) !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        color: white !important;
-    }}
-
-    .stTabs [data-baseweb="tab-list"] {{
-        background: {t['tab_bg']} !important;
-        border: 1px solid {t['border']} !important;
-        border-radius: 14px !important;
-        padding: 5px !important;
-        gap: 3px !important;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        background: transparent !important;
-        color: {t['text_secondary']} !important;
-        border-radius: 10px !important;
-        font-size: 0.78rem !important;
-        font-weight: 500 !important;
-        padding: 0.5rem 1rem !important;
-    }}
-    .stTabs [aria-selected="true"] {{
-        background: {t['tab_selected']} !important;
-        color: white !important;
-    }}
-
-    input, textarea, select {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-    }}
-    .stTextInput > div > div > input {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-        border: 1.5px solid {t['border']} !important;
-        border-radius: 8px !important;
-    }}
-    .stTextInput > div > div > input:focus {{
-        border-color: {t['accent']} !important;
-        box-shadow: 0 0 0 3px {t['accent']}22 !important;
-    }}
-    .stTextArea > div > div > textarea {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-        border: 1.5px solid {t['border']} !important;
-        border-radius: 8px !important;
-    }}
-    .stSelectbox > div > div {{
-        color: {t['input_text']} !important;
-        background-color: {t['input_bg']} !important;
-        border: 1.5px solid {t['border']} !important;
-        border-radius: 8px !important;
-    }}
-    .stNumberInput > div > div > input {{
-        color: {t['input_text']} !important;
- def apply_theme(t: dict) -> None:
-    """Applique le thème via CSS.
-
-    Args:
-        t: Dictionnaire de couleurs.
-    """
-    st.markdown(f"""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
-
-    html, body, [class*="css"] {{
-        font-family: 'Inter', sans-serif !important;
-        background-color: {t['bg']} !important;
-        color: {t['text']} !important;
-    }}
-
-    #MainMenu, footer, header,
-    [data-testid="stToolbar"],
-    .viewerBadge_container__1QSob,
-    .viewerBadge_link__1S137,
-    a[href*="github"],
-    button[title*="GitHub"],
-    [data-testid="stDecoration"] {{
-        display: none !important;
-        visibility: hidden !important;
-    }}
-
-    [data-testid="stSidebar"] {{
-        background: {t['sidebar_bg']} !important;
-        border-right: none !important;
         min-width: 280px !important;
     }}
     [data-testid="stSidebar"] * {{
@@ -437,6 +261,8 @@ def apply_theme(t: dict) -> None:
     }}
     </style>
     """, unsafe_allow_html=True)
+
+
 def get_app_url() -> str:
     """Retourne l'URL de base.
 
@@ -473,7 +299,7 @@ def is_admin() -> bool:
 
 
 def is_logged_in() -> bool:
-    """Vérifie si connecté (admin ou créateur).
+    """Vérifie si connecté.
 
     Returns:
         True si connecté.
@@ -481,7 +307,6 @@ def is_logged_in() -> bool:
     return st.session_state.role in ("admin", "creator")
 
 
-def render_sidebar_auth(t: dict) -> None:
 def render_sidebar_auth(t: dict, conn) -> None:
     """Affiche l'authentification dans la sidebar.
 
@@ -520,7 +345,7 @@ def render_sidebar_auth(t: dict, conn) -> None:
 
         else:
             st.sidebar.markdown("""
-            <div style="color:rgba(255,255,255,0.7); font-size:0.75rem; margin-bottom:0.5rem;">
+            <div style="color:rgba(255 255 255 / 0.7); font-size:0.75rem; margin-bottom:0.5rem;">
                 Entrez le mot de passe de votre formulaire pour y accéder.
             </div>
             """, unsafe_allow_html=True)
@@ -537,7 +362,6 @@ def render_sidebar_auth(t: dict, conn) -> None:
                 if not pwd_input.strip():
                     st.sidebar.error("❌ Mot de passe requis")
                 else:
-                    # Chercher quel formulaire correspond à ce mot de passe
                     all_schemas = load_schemas_db(conn)
                     matched_creator = None
                     for domain, schema in all_schemas.items():
@@ -554,7 +378,7 @@ def render_sidebar_auth(t: dict, conn) -> None:
     else:
         role_label = "👑 Admin" if is_admin() else f"👤 {st.session_state.user_id}"
         st.sidebar.markdown(f"""
-        <div style="background:rgba(255,255,255,0.15); border-radius:10px;
+        <div style="background:rgba(255 255 255 / 0.15); border-radius:10px;
             padding:0.8rem 1rem; margin-bottom:0.8rem;">
             <div style="font-size:0.65rem; color:{t['sidebar_muted']};
                 text-transform:uppercase; letter-spacing:0.08em;">Connecté</div>
@@ -612,9 +436,7 @@ def render_field(field: dict) -> Any:
     if field.get("multiline"):
         return st.text_area(full_label, value=field.get("default", ""), help=help_text)
     return st.text_input(full_label, value=field.get("default", ""), help=help_text)
-
-
-def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> None:
+    def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> None:
     """Affiche le dashboard statistique.
 
     Args:
@@ -796,8 +618,8 @@ def render_admin_tab(conn, t: dict) -> None:
     with col2:
         form_description = st.text_area("📝 Description", placeholder="Objectif de l'étude...", height=100)
         creator_pwd = st.text_input("🔒 Mot de passe du formulaire *", type="password",
-                                    placeholder="Pour protéger votre formulaire",
-                                    help="Notez ce mot de passe — il vous servira à gérer ce formulaire")
+                                    placeholder="Pour accéder à vos données",
+                                    help="Notez ce mot de passe — il vous servira à vous reconnecter")
 
     nb_fields = st.number_input("Nombre de champs", min_value=1, max_value=20, value=3, step=1)
     fields = []
@@ -853,7 +675,7 @@ def render_admin_tab(conn, t: dict) -> None:
         if not domain_name.strip(): errors.append("Identifiant obligatoire.")
         if not domain_name.strip().replace("_", "").isalnum():
             errors.append("Identifiant : lettres, chiffres, underscores uniquement.")
-        if not creator_pwd.strip(): errors.append("Mot de passe du formulaire obligatoire.")
+        if not creator_pwd.strip(): errors.append("Mot de passe obligatoire.")
         for i, f in enumerate(fields):
             if not f.get("label"): errors.append(f"Libellé champ {i+1} manquant.")
             if not f.get("name"): errors.append(f"Nom interne champ {i+1} manquant.")
@@ -957,9 +779,7 @@ def render_admin_tab(conn, t: dict) -> None:
                         st.rerun()
                     except Exception as exc:
                         st.error(f"❌ {exc}")
-
-
-def main() -> None:
+                        def main() -> None:
     """Point d'entrée principal."""
     init_session()
 
@@ -980,24 +800,24 @@ def main() -> None:
     <div style="background:{t['hero']}; border-radius:20px; padding:2.5rem 3rem;
         margin-bottom:2rem; position:relative; overflow:hidden;">
         <div style="position:absolute; top:-40px; right:-40px; width:250px; height:250px;
-            background:rgba(255,255,255,0.06); border-radius:50%;"></div>
+            background:rgba(255 255 255 / 0.06); border-radius:50%;"></div>
         <div style="position:absolute; bottom:-60px; right:100px; width:180px; height:180px;
-            background:rgba(255,255,255,0.04); border-radius:50%;"></div>
+            background:rgba(255 255 255 / 0.04); border-radius:50%;"></div>
         <div style="position:relative;">
             <div style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
-                color:rgba(255,255,255,0.6); margin-bottom:0.5rem;">
+                color:rgba(255 255 255 / 0.6); margin-bottom:0.5rem;">
                 Plateforme de collecte de données
             </div>
             <div style="font-family:'Playfair Display',serif; font-size:2.5rem;
                 font-weight:800; color:white; line-height:1.1; margin-bottom:0.5rem;">
                 DataCollect
-                <span style="display:inline-block; background:rgba(255,255,255,0.2);
+                <span style="display:inline-block; background:rgba(255 255 255 / 0.2);
                     color:white; font-size:0.6rem; font-weight:600; padding:4px 12px;
                     border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
                     vertical-align:middle; margin-left:10px;
-                    border:1px solid rgba(255,255,255,0.3);">Universal</span>
+                    border:1px solid rgba(255 255 255 / 0.3);">Universal</span>
             </div>
-            <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;">
+            <div style="color:rgba(255 255 255 / 0.7); font-size:0.85rem;">
                 Réalisé par Botagne Julien Claude Daniel · Moteur piloté par schéma
             </div>
         </div>
@@ -1025,12 +845,12 @@ def main() -> None:
         t = THEMES[st.session_state.theme]
         apply_theme(t)
 
-        st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
+        st.markdown("<hr style='border-color:rgba(255 255 255 / 0.1);margin:0.5rem 0;'>",
                     unsafe_allow_html=True)
 
         render_sidebar_auth(t, conn)
 
-        st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
+        st.markdown("<hr style='border-color:rgba(255 255 255 / 0.1);margin:0.5rem 0;'>",
                     unsafe_allow_html=True)
 
         if is_logged_in():
@@ -1052,9 +872,9 @@ def main() -> None:
             selected_domain = None
             if not url_study:
                 st.markdown(f"""
-                <div style="background:rgba(255,255,255,0.08); border-radius:10px;
+                <div style="background:rgba(255 255 255 / 0.08); border-radius:10px;
                     padding:1rem; margin-top:0.5rem; text-align:center;">
-                    <div style="color:rgba(255,255,255,0.7); font-size:0.8rem;">
+                    <div style="color:rgba(255 255 255 / 0.7); font-size:0.8rem;">
                         Connectez-vous pour gérer vos formulaires<br>
                         ou utilisez un lien d'étude.
                     </div>
@@ -1127,21 +947,21 @@ def main() -> None:
         <div style="background:{domain_gradient}; border-radius:16px;
             padding:2rem 2.5rem; margin-bottom:1.5rem; position:relative; overflow:hidden;">
             <div style="position:absolute; top:-30px; right:-30px; width:160px; height:160px;
-                background:rgba(255,255,255,0.07); border-radius:50%;"></div>
+                background:rgba(255 255 255 / 0.07); border-radius:50%;"></div>
             <div style="position:relative;">
                 <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
-                    color:rgba(255,255,255,0.6); margin-bottom:0.4rem;">📋 Formulaire</div>
+                    color:rgba(255 255 255 / 0.6); margin-bottom:0.4rem;">📋 Formulaire</div>
                 <div style="font-family:'Playfair Display',serif; font-size:1.8rem;
                     font-weight:700; color:white; margin-bottom:0.4rem;">{form_title}</div>
-                <div style="color:rgba(255,255,255,0.8); font-size:0.85rem;">
+                <div style="color:rgba(255 255 255 / 0.8); font-size:0.85rem;">
                     {form_description or 'Remplissez le formulaire ci-dessous.'}
                 </div>
                 <div style="margin-top:1rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
-                    <span style="background:rgba(255,255,255,0.2); color:white;
+                    <span style="background:rgba(255 255 255 / 0.2); color:white;
                         padding:3px 12px; border-radius:20px; font-size:0.72rem;">
                         {len(schema_fields)} champs
                     </span>
-                    <span style="background:rgba(255,255,255,0.2); color:white;
+                    <span style="background:rgba(255 255 255 / 0.2); color:white;
                         padding:3px 12px; border-radius:20px; font-size:0.72rem;">
                         🔒 Données permanentes
                     </span>
@@ -1225,7 +1045,7 @@ def main() -> None:
             <div style="background:{domain_gradient}; border-radius:14px;
                 padding:1.5rem 2rem; margin-bottom:1.5rem;">
                 <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
-                    color:rgba(255,255,255,0.6); margin-bottom:0.3rem;">
+                    color:rgba(255 255 255 / 0.6); margin-bottom:0.3rem;">
                     📊 Tableau de bord analytique
                 </div>
                 <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
@@ -1241,4 +1061,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-     
