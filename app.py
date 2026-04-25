@@ -211,6 +211,93 @@ def apply_theme(t: dict) -> None:
         border: 1.5px solid {t['border']} !important;
         border-radius: 8px !important;
     }}
+def apply_theme(t: dict) -> None:
+    """Applique le thème via CSS.
+
+    Args:
+        t: Dictionnaire de couleurs.
+    """
+    st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
+    html, body, [class*="css"] {{
+        font-family: 'Inter', sans-serif !important;
+        background-color: {t['bg']} !important;
+        color: {t['text']} !important;
+    }}
+
+    #MainMenu, footer, header,
+    [data-testid="stToolbar"],
+    .viewerBadge_container__1QSob,
+    .viewerBadge_link__1S137,
+    a[href*="github"],
+    button[title*="GitHub"],
+    [data-testid="stDecoration"] {{
+        display: none !important;
+        visibility: hidden !important;
+    }}
+
+    [data-testid="stSidebar"] {{
+        background: {t['sidebar_bg']} !important;
+        border-right: none !important;
+    }}
+    [data-testid="stSidebar"] * {{
+        color: {t['sidebar_text']} !important;
+    }}
+    [data-testid="stSidebar"] .stSelectbox > div > div,
+    [data-testid="stSidebar"] .stTextInput > div > div > input {{
+        background: rgba(255,255,255,0.12) !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        color: white !important;
+    }}
+
+    .stTabs [data-baseweb="tab-list"] {{
+        background: {t['tab_bg']} !important;
+        border: 1px solid {t['border']} !important;
+        border-radius: 14px !important;
+        padding: 5px !important;
+        gap: 3px !important;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        background: transparent !important;
+        color: {t['text_secondary']} !important;
+        border-radius: 10px !important;
+        font-size: 0.78rem !important;
+        font-weight: 500 !important;
+        padding: 0.5rem 1rem !important;
+    }}
+    .stTabs [aria-selected="true"] {{
+        background: {t['tab_selected']} !important;
+        color: white !important;
+    }}
+
+    input, textarea, select {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+    }}
+    .stTextInput > div > div > input {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+        border: 1.5px solid {t['border']} !important;
+        border-radius: 8px !important;
+    }}
+    .stTextInput > div > div > input:focus {{
+        border-color: {t['accent']} !important;
+        box-shadow: 0 0 0 3px {t['accent']}22 !important;
+    }}
+    .stTextArea > div > div > textarea {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+        border: 1.5px solid {t['border']} !important;
+        border-radius: 8px !important;
+    }}
+    .stSelectbox > div > div {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+        border: 1.5px solid {t['border']} !important;
+        border-radius: 8px !important;
+    }}
     .stNumberInput > div > div > input {{
         color: {t['input_text']} !important;
         background-color: {t['input_bg']} !important;
@@ -249,9 +336,21 @@ def apply_theme(t: dict) -> None:
         border-radius: 12px !important;
         border: 1px solid {t['border']} !important;
     }}
+
+    /* FORCER SIDEBAR VISIBLE */
+    [data-testid="stSidebar"] {{
+        min-width: 280px !important;
+    }}
+    [data-testid="collapsedControl"] {{
+        display: block !important;
+        background: {t['accent']} !important;
+        border-radius: 0 8px 8px 0 !important;
+    }}
+    [data-testid="collapsedControl"] svg {{
+        fill: white !important;
+    }}
     </style>
     """, unsafe_allow_html=True)
-
 
 def get_app_url() -> str:
     """Retourne l'URL de base.
@@ -298,67 +397,87 @@ def is_logged_in() -> bool:
 
 
 def render_sidebar_auth(t: dict) -> None:
+def render_sidebar_auth(t: dict, conn) -> None:
     """Affiche l'authentification dans la sidebar.
 
     Args:
         t: Thème actif.
+        conn: Connexion base de données.
     """
     if not is_logged_in():
-        st.sidebar.markdown(f"""
-        <div style="background:rgba(255,255,255,0.08); border-radius:12px;
-            padding:1.2rem; margin-bottom:1rem;">
-            <div style="color:white; font-weight:600; margin-bottom:0.8rem;">
-                🔐 Se connecter
-            </div>
+        st.sidebar.markdown("""
+        <div style="color:white; font-weight:600; margin-bottom:0.8rem; font-size:0.9rem;">
+            🔐 Se connecter
+        </div>
         """, unsafe_allow_html=True)
 
         login_type = st.sidebar.radio(
-            "Type",
-            ["👑 Administrateur", "👤 Utilisateur"],
-            key="login_type",
-            label_visibility="collapsed"
+            "Type de compte",
+            ["👑 Administrateur", "👤 Gestionnaire de formulaire"],
+            key="login_type"
         )
 
         if login_type == "👑 Administrateur":
             pwd = st.sidebar.text_input(
-                "Mot de passe",
+                "Mot de passe admin",
                 type="password",
                 key="admin_pwd",
-                placeholder="Mot de passe admin"
+                placeholder="Votre mot de passe"
             )
-            if st.sidebar.button("→ Connexion Admin", key="btn_admin"):
+            if st.sidebar.button("→ Connexion", key="btn_admin",
+                                 use_container_width=True):
                 if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
                     st.session_state.role = "admin"
                     st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
                     st.rerun()
                 else:
                     st.sidebar.error("❌ Mot de passe incorrect")
-        else:
-            user_id = st.sidebar.text_input(
-                "Votre identifiant",
-                key="user_id_input",
-                placeholder="Ex: prof_martin"
-            )
-            if st.sidebar.button("→ Se connecter", key="btn_user"):
-                if user_id.strip():
-                    st.session_state.role = "creator"
-                    st.session_state.user_id = user_id.strip()
-                    st.rerun()
-                else:
-                    st.sidebar.error("❌ Identifiant requis")
 
-        st.sidebar.markdown("</div>", unsafe_allow_html=True)
+        else:
+            st.sidebar.markdown("""
+            <div style="color:rgba(255,255,255,0.7); font-size:0.75rem; margin-bottom:0.5rem;">
+                Entrez le mot de passe de votre formulaire pour y accéder.
+            </div>
+            """, unsafe_allow_html=True)
+
+            pwd_input = st.sidebar.text_input(
+                "Mot de passe du formulaire",
+                type="password",
+                key="creator_pwd_input",
+                placeholder="Mot de passe choisi à la création"
+            )
+
+            if st.sidebar.button("→ Accéder", key="btn_creator",
+                                 use_container_width=True):
+                if not pwd_input.strip():
+                    st.sidebar.error("❌ Mot de passe requis")
+                else:
+                    # Chercher quel formulaire correspond à ce mot de passe
+                    all_schemas = load_schemas_db(conn)
+                    matched_creator = None
+                    for domain, schema in all_schemas.items():
+                        if verify_creator_password(conn, domain, pwd_input.strip()):
+                            matched_creator = schema.get("_creator_id", domain)
+                            break
+                    if matched_creator:
+                        st.session_state.role = "creator"
+                        st.session_state.user_id = matched_creator
+                        st.rerun()
+                    else:
+                        st.sidebar.error("❌ Mot de passe incorrect")
+
     else:
         role_label = "👑 Admin" if is_admin() else f"👤 {st.session_state.user_id}"
         st.sidebar.markdown(f"""
-        <div style="background:rgba(255,255,255,0.1); border-radius:10px;
+        <div style="background:rgba(255,255,255,0.15); border-radius:10px;
             padding:0.8rem 1rem; margin-bottom:0.8rem;">
             <div style="font-size:0.65rem; color:{t['sidebar_muted']};
                 text-transform:uppercase; letter-spacing:0.08em;">Connecté</div>
             <div style="color:white; font-weight:600; margin-top:2px;">{role_label}</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.sidebar.button("🚪 Déconnexion", key="btn_logout"):
+        if st.sidebar.button("🚪 Déconnexion", key="btn_logout",
+                             use_container_width=True):
             st.session_state.role = "participant"
             st.session_state.user_id = None
             st.rerun()
@@ -824,7 +943,7 @@ def main() -> None:
         st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
                     unsafe_allow_html=True)
 
-        render_sidebar_auth(t)
+        render_sidebar_auth(t, conn)
 
         st.markdown("<hr style='border-color:rgba(255,255,255,0.1);margin:0.5rem 0;'>",
                     unsafe_allow_html=True)
