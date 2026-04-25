@@ -300,6 +300,105 @@ def apply_theme(t: dict) -> None:
     }}
     .stNumberInput > div > div > input {{
         color: {t['input_text']} !important;
+ def apply_theme(t: dict) -> None:
+    """Applique le thème via CSS.
+
+    Args:
+        t: Dictionnaire de couleurs.
+    """
+    st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
+    html, body, [class*="css"] {{
+        font-family: 'Inter', sans-serif !important;
+        background-color: {t['bg']} !important;
+        color: {t['text']} !important;
+    }}
+
+    #MainMenu, footer, header,
+    [data-testid="stToolbar"],
+    .viewerBadge_container__1QSob,
+    .viewerBadge_link__1S137,
+    a[href*="github"],
+    button[title*="GitHub"],
+    [data-testid="stDecoration"] {{
+        display: none !important;
+        visibility: hidden !important;
+    }}
+
+    [data-testid="stSidebar"] {{
+        background: {t['sidebar_bg']} !important;
+        border-right: none !important;
+        min-width: 280px !important;
+    }}
+    [data-testid="stSidebar"] * {{
+        color: {t['sidebar_text']} !important;
+    }}
+    [data-testid="stSidebar"] .stSelectbox > div > div,
+    [data-testid="stSidebar"] .stTextInput > div > div > input {{
+        background: rgba(255 255 255 / 0.12) !important;
+        border: 1px solid rgba(255 255 255 / 0.2) !important;
+        color: white !important;
+    }}
+
+    [data-testid="collapsedControl"] {{
+        display: block !important;
+        background: {t['accent']} !important;
+        border-radius: 0 8px 8px 0 !important;
+    }}
+    [data-testid="collapsedControl"] svg {{
+        fill: white !important;
+    }}
+
+    .stTabs [data-baseweb="tab-list"] {{
+        background: {t['tab_bg']} !important;
+        border: 1px solid {t['border']} !important;
+        border-radius: 14px !important;
+        padding: 5px !important;
+        gap: 3px !important;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        background: transparent !important;
+        color: {t['text_secondary']} !important;
+        border-radius: 10px !important;
+        font-size: 0.78rem !important;
+        font-weight: 500 !important;
+        padding: 0.5rem 1rem !important;
+    }}
+    .stTabs [aria-selected="true"] {{
+        background: {t['tab_selected']} !important;
+        color: white !important;
+    }}
+
+    input, textarea, select {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+    }}
+    .stTextInput > div > div > input {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+        border: 1.5px solid {t['border']} !important;
+        border-radius: 8px !important;
+    }}
+    .stTextInput > div > div > input:focus {{
+        border-color: {t['accent']} !important;
+        box-shadow: 0 0 0 3px {t['accent']}22 !important;
+    }}
+    .stTextArea > div > div > textarea {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+        border: 1.5px solid {t['border']} !important;
+        border-radius: 8px !important;
+    }}
+    .stSelectbox > div > div {{
+        color: {t['input_text']} !important;
+        background-color: {t['input_bg']} !important;
+        border: 1.5px solid {t['border']} !important;
+        border-radius: 8px !important;
+    }}
+    .stNumberInput > div > div > input {{
+        color: {t['input_text']} !important;
         background-color: {t['input_bg']} !important;
         border: 1.5px solid {t['border']} !important;
         border-radius: 8px !important;
@@ -326,7 +425,7 @@ def apply_theme(t: dict) -> None:
         border-radius: 16px !important;
         border: 1px solid {t['border']} !important;
         padding: 1.5rem !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+        box-shadow: 0 4px 20px rgba(0 0 0 / 0.06) !important;
     }}
 
     label {{ color: {t['text']} !important; font-weight: 500 !important; }}
@@ -336,22 +435,8 @@ def apply_theme(t: dict) -> None:
         border-radius: 12px !important;
         border: 1px solid {t['border']} !important;
     }}
-
-    /* FORCER SIDEBAR VISIBLE */
-    [data-testid="stSidebar"] {{
-        min-width: 280px !important;
-    }}
-    [data-testid="collapsedControl"] {{
-        display: block !important;
-        background: {t['accent']} !important;
-        border-radius: 0 8px 8px 0 !important;
-    }}
-    [data-testid="collapsedControl"] svg {{
-        fill: white !important;
-    }}
     </style>
     """, unsafe_allow_html=True)
-
 def get_app_url() -> str:
     """Retourne l'URL de base.
 
