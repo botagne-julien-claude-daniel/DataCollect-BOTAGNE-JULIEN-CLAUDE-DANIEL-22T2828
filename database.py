@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 @st.cache_resource
 def get_connection():
-    """Retourne une connexion PostgreSQL persistante mise en cache.
+    """Retourne une connexion PostgreSQL persistante.
 
     Returns:
         Connexion psycopg2 active.
@@ -28,13 +28,12 @@ def get_connection():
     url = st.secrets["DATABASE_URL"]
     conn = psycopg2.connect(url)
     conn.autocommit = False
-    logger.info("Connexion PostgreSQL ouverte.")
     return conn
 
 
 @contextmanager
 def transaction(conn):
-    """Gestionnaire de contexte avec commit/rollback automatique.
+    """Gestionnaire de contexte avec commit/rollback.
 
     Args:
         conn: Connexion psycopg2 active.
@@ -62,7 +61,7 @@ _PG_TYPE_MAP: dict[str, str] = {
 
 
 def ensure_schemas_table(conn) -> None:
-    """Crée la table _schemas si elle n'existe pas.
+    """Crée la table _schemas avec gestion des rôles.
 
     Args:
         conn: Connexion psycopg2 active.
@@ -72,48 +71,168 @@ def ensure_schemas_table(conn) -> None:
         id SERIAL PRIMARY KEY,
         domain TEXT UNIQUE NOT NULL,
         schema_json TEXT NOT NULL,
+        creator_id TEXT NOT NULL DEFAULT 'anonymous',
+        creator_password TEXT,
+        is_public BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT NOW()
     );
     """
     with transaction(conn) as cur:
         cur.execute(ddl)
+        # Ajouter les colonnes si elles n'existent pas (migration)
+        for col, definition in [
+            ("creator_id", "TEXT NOT NULL DEFAULT 'anonymous'"),
+            ("creator_password", "TEXT"),
+            ("is_public", "BOOLEAN DEFAULT FALSE"),
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE _schemas ADD COLUMN IF NOT EXISTS {col} {definition};")
+            except Exception:
+                pass
 
 
-def save_schema_db(conn, domain: str, schema: dict) -> None:
-    """Sauvegarde un schéma dans Supabase de façon permanente.
+def save_schema_db(
+    conn,
+    domain: str,
+    schema: dict,
+    creator_id: str = "anonymous",
+    creator_password: str = "",
+    is_public: bool = False,
+) -> None:
+    """Sauvegarde un schéma dans Supabase.
 
     Args:
         conn: Connexion psycopg2 active.
         domain: Identifiant unique du formulaire.
         schema: Dictionnaire du schéma.
+        creator_id: Identifiant du créateur.
+        creator_password: Mot de passe du créateur.
+        is_public: Si True, visible par tous via lien.
     """
     schema_json = json.dumps(schema, ensure_ascii=False)
     sql = """
-    INSERT INTO _schemas (domain, schema_json)
-    VALUES (%s, %s)
-    ON CONFLICT (domain) DO UPDATE SET schema_json = EXCLUDED.schema_json;
+    INSERT INTO _schemas (domain, schema_json, creator_id, creator_password, is_public)
+    VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT (domain) DO UPDATE SET
+        schema_json = EXCLUDED.schema_json,
+        is_public = EXCLUDED.is_public;
     """
     with transaction(conn) as cur:
-        cur.execute(sql, (domain, schema_json))
+        cur.execute(sql, (domain, schema_json, creator_id, creator_password, is_public))
 
 
 def load_schemas_db(conn) -> dict[str, dict]:
-    """Charge tous les schémas depuis Supabase.
+    """Charge tous les schémas (vue admin complète).
 
     Args:
         conn: Connexion psycopg2 active.
 
     Returns:
-        Dictionnaire {domain: schema_dict}.
+        Dictionnaire domain: schema avec métadonnées.
     """
     try:
         with transaction(conn) as cur:
-            cur.execute("SELECT domain, schema_json FROM _schemas ORDER BY created_at DESC;")
+            cur.execute("""
+                SELECT domain, schema_json, creator_id, is_public, created_at
+                FROM _schemas ORDER BY created_at DESC;
+            """)
             rows = cur.fetchall()
-            return {row["domain"]: json.loads(row["schema_json"]) for row in rows}
+            result = {}
+            for row in rows:
+                data = json.loads(row["schema_json"])
+                data["_creator_id"] = row["creator_id"]
+                data["_is_public"] = row["is_public"]
+                data["_created_at"] = str(row["created_at"])
+                result[row["domain"]] = data
+            return result
     except Exception as exc:
         logger.warning("load_schemas_db : %s", exc)
         return {}
+
+
+def load_schemas_for_user(conn, creator_id: str) -> dict[str, dict]:
+    """Charge les schémas visibles par un utilisateur donné.
+
+    Args:
+        conn: Connexion psycopg2 active.
+        creator_id: Identifiant de l'utilisateur connecté.
+
+    Returns:
+        Dictionnaire domain: schema.
+    """
+    try:
+        with transaction(conn) as cur:
+            cur.execute("""
+                SELECT domain, schema_json, creator_id, is_public, created_at
+                FROM _schemas
+                WHERE creator_id = %s
+                ORDER BY created_at DESC;
+            """, (creator_id,))
+            rows = cur.fetchall()
+            result = {}
+            for row in rows:
+                data = json.loads(row["schema_json"])
+                data["_creator_id"] = row["creator_id"]
+                data["_is_public"] = row["is_public"]
+                result[row["domain"]] = data
+            return result
+    except Exception as exc:
+        logger.warning("load_schemas_for_user : %s", exc)
+        return {}
+
+
+def load_schema_by_domain(conn, domain: str) -> dict | None:
+    """Charge un schéma spécifique par son domain.
+
+    Args:
+        conn: Connexion psycopg2 active.
+        domain: Identifiant du formulaire.
+
+    Returns:
+        Dictionnaire du schéma ou None.
+    """
+    try:
+        with transaction(conn) as cur:
+            cur.execute("""
+                SELECT domain, schema_json, creator_id, creator_password, is_public
+                FROM _schemas WHERE domain = %s;
+            """, (domain,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            data = json.loads(row["schema_json"])
+            data["_creator_id"] = row["creator_id"]
+            data["_creator_password"] = row["creator_password"]
+            data["_is_public"] = row["is_public"]
+            return data
+    except Exception as exc:
+        logger.warning("load_schema_by_domain : %s", exc)
+        return None
+
+
+def verify_creator_password(conn, domain: str, password: str) -> bool:
+    """Vérifie le mot de passe du créateur d'un formulaire.
+
+    Args:
+        conn: Connexion psycopg2 active.
+        domain: Identifiant du formulaire.
+        password: Mot de passe à vérifier.
+
+    Returns:
+        True si le mot de passe est correct.
+    """
+    try:
+        with transaction(conn) as cur:
+            cur.execute(
+                "SELECT creator_password FROM _schemas WHERE domain = %s;",
+                (domain,)
+            )
+            row = cur.fetchone()
+            if not row:
+                return False
+            return row["creator_password"] == password
+    except Exception:
+        return False
 
 
 def delete_schema_db(conn, domain: str) -> None:
@@ -157,7 +276,7 @@ def insert_row(conn, table_name: str, data: dict[str, Any]) -> int:
     Args:
         conn: Connexion psycopg2 active.
         table_name: Nom de la table cible.
-        data: Dictionnaire colonne → valeur.
+        data: Dictionnaire colonne valeur.
 
     Returns:
         L'id de la ligne insérée.
@@ -172,7 +291,7 @@ def insert_row(conn, table_name: str, data: dict[str, Any]) -> int:
 
 
 def fetch_all(conn, table_name: str) -> pd.DataFrame:
-    """Charge toutes les lignes d'une table dans un DataFrame.
+    """Charge toutes les lignes d'une table.
 
     Args:
         conn: Connexion psycopg2 active.
