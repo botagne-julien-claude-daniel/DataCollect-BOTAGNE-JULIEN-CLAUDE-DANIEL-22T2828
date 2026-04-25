@@ -917,51 +917,67 @@ def main() -> None:
     query_params = st.query_params
     url_study = query_params.get("study", None)
 
-    st.markdown(f"""
-    <div style="background:{t['hero']}; border-radius:20px; padding:2.5rem 3rem;
-        margin-bottom:2rem; position:relative; overflow:hidden;">
-        <div style="position:absolute; top:-40px; right:-40px; width:250px; height:250px;
-            background:rgba(255,255,255,0.06); border-radius:50%;"></div>
-        <div style="position:absolute; bottom:-60px; right:100px; width:180px; height:180px;
-            background:rgba(255,255,255,0.04); border-radius:50%;"></div>
-        <div style="position:absolute; top:20px; right:200px; width:80px; height:80px;
-            background:rgba(255,255,255,0.05); border-radius:50%;"></div>
-        <div style="position:relative;">
-            <div style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
-                color:rgba(255,255,255,0.6); margin-bottom:0.5rem;">
-                Plateforme de collecte de données
-            </div>
-            <div style="font-family:'Playfair Display',serif; font-size:2.5rem; font-weight:800;
-                color:white; line-height:1.1; margin-bottom:0.5rem;">
-                DataCollect
-                <span style="display:inline-block; background:rgba(255,255,255,0.2);
-                    color:white; font-size:0.6rem; font-weight:600; padding:4px 12px;
-                    border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
-                    vertical-align:middle; margin-left:10px; border:1px solid rgba(255,255,255,0.3);">
-                    Universal
-                </span>
-            </div>
-            <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;">
-                Réalisé par Botagne Julien Claude Daniel · Moteur piloté par schéma
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.sidebar:
-        st.markdown(f"""
-        <div style="padding:1.2rem 0 0.8rem;">
-            <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
-                        font-weight:700; color:white;">{form_title}</div>
+    # =========================
+    # HEADER PRINCIPAL
+    # =========================
+    st.markdown(
+        f"""
+        <div style="background:{t['hero']}; border-radius:20px; padding:2.5rem 3rem;
+            margin-bottom:2rem; position:relative; overflow:hidden;">
+            <div style="position:absolute; top:-40px; right:-40px; width:250px; height:250px;
+                background:rgba(255,255,255,0.06); border-radius:50%;"></div>
+            <div style="position:absolute; bottom:-60px; right:100px; width:180px; height:180px;
+                background:rgba(255,255,255,0.04); border-radius:50%;"></div>
+            <div style="position:absolute; top:20px; right:200px; width:80px; height:80px;
+                background:rgba(255,255,255,0.05); border-radius:50%;"></div>
+            <div style="position:relative;">
+                <div style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
+                    color:rgba(255,255,255,0.6); margin-bottom:0.5rem;">
+                    Plateforme de collecte de données
+                </div>
+                <div style="font-family:'Playfair Display',serif; font-size:2.5rem; font-weight:800;
+                    color:white; line-height:1.1; margin-bottom:0.5rem;">
+                    DataCollect
+                    <span style="display:inline-block; background:rgba(255,255,255,0.2);
+                        color:white; font-size:0.6rem; font-weight:600; padding:4px 12px;
+                        border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
+                        vertical-align:middle; margin-left:10px; border:1px solid rgba(255,255,255,0.3);">
+                        Universal
+                    </span>
+                </div>
+                <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;">
+                    Réalisé par Botagne Julien Claude Daniel · Moteur piloté par schéma
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-            try:
-                df_stats = fetch_all(conn, domain)
-                render_statistics(df_stats, schema_fields, t)
-            except Exception as exc:
-                st.error(f"❌ Erreur : {exc}")
+    # =========================
+    # SIDEBAR (UI uniquement)
+    # =========================
+    with st.sidebar:
+        st.markdown(
+            f"""
+            <div style="padding:1.2rem 0 0.8rem;">
+                <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
+                            font-weight:700; color:white;">
+                    {form_title}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    # =========================
+    # LOGIQUE (hors sidebar)
+    # =========================
+    try:
+        df_stats = fetch_all(conn, domain)
+        render_statistics(df_stats, schema_fields, t)
+    except Exception as exc:
+        st.error(f"❌ Erreur : {exc}")
 
 
 if __name__ == "__main__":
