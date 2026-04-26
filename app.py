@@ -36,7 +36,7 @@ st.set_page_config(
     page_title="DataCollect Universal",
     page_icon="📋",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 THEMES = {
@@ -154,25 +154,9 @@ def apply_theme(t: dict) -> None:
     [data-testid="stSidebar"] {{
         background: {t['sidebar_bg']} !important;
         border-right: none !important;
-        min-width: 280px !important;
     }}
     [data-testid="stSidebar"] * {{
         color: {t['sidebar_text']} !important;
-    }}
-    [data-testid="stSidebar"] .stSelectbox > div > div,
-    [data-testid="stSidebar"] .stTextInput > div > div > input {{
-        background: rgba(255 255 255 / 0.12) !important;
-        border: 1px solid rgba(255 255 255 / 0.2) !important;
-        color: white !important;
-    }}
-
-    [data-testid="collapsedControl"] {{
-        display: block !important;
-        background: {t['accent']} !important;
-        border-radius: 0 8px 8px 0 !important;
-    }}
-    [data-testid="collapsedControl"] svg {{
-        fill: white !important;
     }}
 
     .stTabs [data-baseweb="tab-list"] {{
@@ -307,91 +291,6 @@ def is_logged_in() -> bool:
     return st.session_state.role in ("admin", "creator")
 
 
-def render_sidebar_auth(t: dict, conn) -> None:
-    """Affiche l'authentification dans la sidebar.
-
-    Args:
-        t: Thème actif.
-        conn: Connexion base de données.
-    """
-    if not is_logged_in():
-        st.sidebar.markdown("""
-        <div style="color:white; font-weight:600; margin-bottom:0.8rem; font-size:0.9rem;">
-            🔐 Se connecter
-        </div>
-        """, unsafe_allow_html=True)
-
-        login_type = st.sidebar.radio(
-            "Type de compte",
-            ["👑 Administrateur", "👤 Gestionnaire de formulaire"],
-            key="login_type"
-        )
-
-        if login_type == "👑 Administrateur":
-            pwd = st.sidebar.text_input(
-                "Mot de passe admin",
-                type="password",
-                key="admin_pwd",
-                placeholder="Votre mot de passe"
-            )
-            if st.sidebar.button("→ Connexion", key="btn_admin",
-                                 use_container_width=True):
-                if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
-                    st.session_state.role = "admin"
-                    st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
-                    st.rerun()
-                else:
-                    st.sidebar.error("❌ Mot de passe incorrect")
-
-        else:
-            st.sidebar.markdown("""
-            <div style="color:rgba(255 255 255 / 0.7); font-size:0.75rem; margin-bottom:0.5rem;">
-                Entrez le mot de passe de votre formulaire pour y accéder.
-            </div>
-            """, unsafe_allow_html=True)
-
-            pwd_input = st.sidebar.text_input(
-                "Mot de passe du formulaire",
-                type="password",
-                key="creator_pwd_input",
-                placeholder="Mot de passe choisi à la création"
-            )
-
-            if st.sidebar.button("→ Accéder", key="btn_creator",
-                                 use_container_width=True):
-                if not pwd_input.strip():
-                    st.sidebar.error("❌ Mot de passe requis")
-                else:
-                    all_schemas = load_schemas_db(conn)
-                    matched_creator = None
-                    for domain, schema in all_schemas.items():
-                        if verify_creator_password(conn, domain, pwd_input.strip()):
-                            matched_creator = schema.get("_creator_id", domain)
-                            break
-                    if matched_creator:
-                        st.session_state.role = "creator"
-                        st.session_state.user_id = matched_creator
-                        st.rerun()
-                    else:
-                        st.sidebar.error("❌ Mot de passe incorrect")
-
-    else:
-        role_label = "👑 Admin" if is_admin() else f"👤 {st.session_state.user_id}"
-        st.sidebar.markdown(f"""
-        <div style="background:rgba(255 255 255 / 0.15); border-radius:10px;
-            padding:0.8rem 1rem; margin-bottom:0.8rem;">
-            <div style="font-size:0.65rem; color:{t['sidebar_muted']};
-                text-transform:uppercase; letter-spacing:0.08em;">Connecté</div>
-            <div style="color:white; font-weight:600; margin-top:2px;">{role_label}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.sidebar.button("🚪 Déconnexion", key="btn_logout",
-                             use_container_width=True):
-            st.session_state.role = "participant"
-            st.session_state.user_id = None
-            st.rerun()
-
-
 def render_field(field: dict) -> Any:
     """Génère le widget pour un champ du schéma.
 
@@ -436,7 +335,7 @@ def render_field(field: dict) -> Any:
     if field.get("multiline"):
         return st.text_area(full_label, value=field.get("default", ""), help=help_text)
     return st.text_input(full_label, value=field.get("default", ""), help=help_text)
-def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> None:
+    def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> None:
     """Affiche le dashboard statistique.
 
     Args:
@@ -575,7 +474,6 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            use_container_width=True)
 
-
 def render_admin_tab(conn, t: dict) -> None:
     """Onglet de création et gestion des formulaires.
 
@@ -586,27 +484,100 @@ def render_admin_tab(conn, t: dict) -> None:
     if not is_logged_in():
         st.markdown(f"""
         <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-            border-radius:16px; padding:3rem; text-align:center;">
-            <div style="font-size:3rem;">🔐</div>
-            <div style="font-size:1.2rem; font-weight:700; color:{t['text']}; margin-top:1rem;">
-                Connectez-vous pour créer un formulaire
+            border-radius:16px; padding:2rem; margin-bottom:1.5rem;">
+            <div style="font-size:1.2rem; font-weight:700; color:{t['text']}; margin-bottom:0.3rem;">
+                🔐 Connexion
             </div>
-            <div style="color:{t['text_secondary']}; font-size:0.85rem; margin-top:0.5rem;">
-                Utilisez le panneau de connexion dans la sidebar à gauche.
+            <div style="color:{t['text_secondary']}; font-size:0.85rem;">
+                Connectez-vous pour créer et gérer vos formulaires.
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+        login_type = st.radio(
+            "Type de compte",
+            ["👑 Administrateur", "👤 Gestionnaire de formulaire"],
+            key="login_type_main",
+            horizontal=True,
+        )
+
+        if login_type == "👑 Administrateur":
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                pwd = st.text_input(
+                    "Mot de passe admin",
+                    type="password",
+                    key="admin_pwd_main",
+                    placeholder="Votre mot de passe administrateur"
+                )
+            with col2:
+                st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+                if st.button("→ Connexion", key="btn_admin_main", use_container_width=True):
+                    if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
+                        st.session_state.role = "admin"
+                        st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
+                        st.rerun()
+                    else:
+                        st.error("❌ Mot de passe incorrect")
+        else:
+            st.markdown(f"""
+            <div style="color:{t['text_secondary']}; font-size:0.82rem; margin-bottom:0.5rem;">
+                Entrez le mot de passe choisi lors de la création de votre formulaire.
+            </div>
+            """, unsafe_allow_html=True)
+
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                pwd_input = st.text_input(
+                    "Mot de passe du formulaire",
+                    type="password",
+                    key="creator_pwd_main",
+                    placeholder="Mot de passe de votre formulaire"
+                )
+            with col2:
+                st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+                if st.button("→ Accéder", key="btn_creator_main", use_container_width=True):
+                    if not pwd_input.strip():
+                        st.error("❌ Mot de passe requis")
+                    else:
+                        all_schemas = load_schemas_db(conn)
+                        matched_creator = None
+                        for domain, schema in all_schemas.items():
+                            if verify_creator_password(conn, domain, pwd_input.strip()):
+                                matched_creator = schema.get("_creator_id", domain)
+                                break
+                        if matched_creator:
+                            st.session_state.role = "creator"
+                            st.session_state.user_id = matched_creator
+                            st.rerun()
+                        else:
+                            st.error("❌ Mot de passe incorrect")
         return
 
+    # SI CONNECTÉ
+    role_label = "👑 Administrateur" if is_admin() else f"👤 {st.session_state.user_id}"
+    col_info, col_logout = st.columns([3, 1])
+    with col_info:
+        st.markdown(f"""
+        <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
+            border-radius:12px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
+            <div style="font-size:0.7rem; color:{t['text_secondary']};
+                text-transform:uppercase; letter-spacing:0.08em;">Connecté en tant que</div>
+            <div style="font-weight:700; color:{t['text']}; font-size:1rem;
+                margin-top:4px;">{role_label}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_logout:
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        if st.button("🚪 Déconnexion", key="btn_logout_main", use_container_width=True):
+            st.session_state.role = "participant"
+            st.session_state.user_id = None
+            st.rerun()
+
     st.markdown(f"""
-    <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-        border-radius:16px; padding:1.5rem; margin-bottom:1.5rem;">
-        <div style="font-size:1.2rem; font-weight:700; color:{t['text']};">
-            🚀 Créer un nouveau formulaire
-        </div>
-        <div style="color:{t['text_secondary']}; font-size:0.85rem; margin-top:0.3rem;">
-            Connecté en tant que : <strong>{st.session_state.user_id}</strong>
-        </div>
+    <div style="font-weight:700; color:{t['text']}; font-size:1.05rem;
+        margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:2px solid {t['divider']};">
+        🚀 Créer un nouveau formulaire
     </div>
     """, unsafe_allow_html=True)
 
@@ -796,6 +767,7 @@ def main() -> None:
     query_params = st.query_params
     url_study = query_params.get("study", None)
 
+    # HEADER
     st.markdown(f"""
     <div style="background:{t['hero']}; border-radius:20px; padding:2.5rem 3rem;
         margin-bottom:2rem; position:relative; overflow:hidden;">
@@ -824,18 +796,9 @@ def main() -> None:
     </div>
     """, unsafe_allow_html=True)
 
-    with st.sidebar:
-        st.markdown(f"""
-        <div style="padding:1.2rem 0 0.8rem;">
-            <div style="font-family:'Playfair Display',serif; font-size:1.2rem;
-                font-weight:700; color:white;">📋 DataCollect</div>
-            <div style="font-size:0.65rem; color:{t['sidebar_muted']};
-                letter-spacing:0.1em; text-transform:uppercase; margin-top:2px;">
-                Universal Platform
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
+    # SÉLECTEUR DE THÈME
+    theme_col, _ = st.columns([2, 6])
+    with theme_col:
         st.session_state.theme = st.selectbox(
             "🎨 Thème",
             list(THEMES.keys()),
@@ -845,49 +808,7 @@ def main() -> None:
         t = THEMES[st.session_state.theme]
         apply_theme(t)
 
-        st.markdown("<hr style='border-color:rgba(255 255 255 / 0.1);margin:0.5rem 0;'>",
-                    unsafe_allow_html=True)
-
-        render_sidebar_auth(t, conn)
-
-        st.markdown("<hr style='border-color:rgba(255 255 255 / 0.1);margin:0.5rem 0;'>",
-                    unsafe_allow_html=True)
-
-        if is_logged_in():
-            all_schemas = load_schemas_db(conn) if is_admin() else load_schemas_for_user(conn, st.session_state.user_id)
-            available = list(all_schemas.keys())
-            if available:
-                default_idx = available.index(url_study) if url_study and url_study in available else 0
-                selected_domain = st.selectbox(
-                    "📋 Mes formulaires",
-                    available,
-                    index=default_idx,
-                    format_func=lambda x: all_schemas[x].get("title", x)
-                )
-            else:
-                selected_domain = None
-                st.info("Aucun formulaire. Créez-en un dans Admin.")
-        else:
-            all_schemas = {}
-            selected_domain = None
-            if not url_study:
-                st.markdown(f"""
-                <div style="background:rgba(255 255 255 / 0.08); border-radius:10px;
-                    padding:1rem; margin-top:0.5rem; text-align:center;">
-                    <div style="color:rgba(255 255 255 / 0.7); font-size:0.8rem;">
-                        Connectez-vous pour gérer vos formulaires<br>
-                        ou utilisez un lien d'étude.
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-        st.markdown(f"""
-        <div style="font-size:0.65rem; color:{t['sidebar_muted']}; text-align:center;
-            padding:1rem 0;">
-            🔒 Données permanentes · Supabase
-        </div>
-        """, unsafe_allow_html=True)
-
+    # RÉSOLUTION DU DOMAINE
     if url_study:
         schema = load_schema_by_domain(conn, url_study)
         if schema:
@@ -895,13 +816,26 @@ def main() -> None:
         else:
             st.error("❌ Formulaire introuvable. Le lien est invalide.")
             st.stop()
-    elif is_logged_in() and selected_domain:
-        domain = selected_domain
-        schema = all_schemas.get(domain)
+    elif is_logged_in():
+        all_schemas = load_schemas_db(conn) if is_admin() else load_schemas_for_user(conn, st.session_state.user_id)
+        available = list(all_schemas.keys())
+        if available:
+            selected = st.selectbox(
+                "📋 Sélectionner un formulaire",
+                available,
+                format_func=lambda x: all_schemas[x].get("title", x)
+            )
+            domain = selected
+            schema = all_schemas.get(domain)
+        else:
+            domain = None
+            schema = None
     else:
+        all_schemas = {}
         domain = None
         schema = None
 
+    # ONGLETS
     tab_form, tab_data, tab_stats, tab_admin = st.tabs([
         "✏️  Saisie", "📋  Données", "📊  Statistiques", "⚙️  Admin"
     ])
@@ -913,12 +847,13 @@ def main() -> None:
         with tab_form:
             st.markdown(f"""
             <div style="background:{t['card']}; border:1px solid {t['border']};
-                border-radius:16px; padding:3rem; text-align:center;">
+                border-radius:16px; padding:3rem; text-align:center; margin-top:1rem;">
                 <div style="font-size:3rem;">📋</div>
                 <div style="font-size:1.1rem; font-weight:600;
                     color:{t['text_secondary']}; margin-top:1rem;">
-                    {"Connectez-vous et sélectionnez un formulaire"
-                     if not is_logged_in() else "Sélectionnez ou créez un formulaire"}
+                    {"Connectez-vous dans l'onglet Admin pour créer un formulaire"
+                     if not is_logged_in()
+                     else "Sélectionnez ou créez un formulaire dans l'onglet Admin"}
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -942,6 +877,7 @@ def main() -> None:
         st.error(f"❌ Erreur validation : {exc}")
         st.stop()
 
+    # ONGLET SAISIE
     with tab_form:
         st.markdown(f"""
         <div style="background:{domain_gradient}; border-radius:16px;
@@ -1010,6 +946,7 @@ def main() -> None:
                 with st.expander("Détails"):
                     st.code(traceback.format_exc())
 
+    # ONGLET DONNÉES
     with tab_data:
         domain_creator = schema.get("_creator_id", "")
         can_access = is_admin() or st.session_state.user_id == domain_creator
@@ -1035,6 +972,7 @@ def main() -> None:
                 st.dataframe(df, use_container_width=True, hide_index=True)
                 export_dataframe(df, domain)
 
+    # ONGLET STATISTIQUES
     with tab_stats:
         domain_creator = schema.get("_creator_id", "")
         can_access = is_admin() or st.session_state.user_id == domain_creator
