@@ -335,7 +335,7 @@ def render_field(field: dict) -> Any:
     if field.get("multiline"):
         return st.text_area(full_label, value=field.get("default", ""), help=help_text)
     return st.text_input(full_label, value=field.get("default", ""), help=help_text)
-    def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> None:
+def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> None:
     """Affiche le dashboard statistique.
 
     Args:
