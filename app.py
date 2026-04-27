@@ -726,30 +726,86 @@ def render_admin_tab(conn, t: dict) -> None:
                                 {len(schema.get('fields', []))} champs
                             </span>
                             <span style="background:{t['tag_bg']}; color:{t['tag_text']};
-                                padding:2px 10px; border-radius:20px; font-size:0.72rem; font-weight:600;">
-                                👤 {creator}
-                            </span>
-                        </div>
-                        <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-                            border-radius:8px; padding:0.5rem 0.8rem; margin-top:0.8rem;
-                            font-family:monospace; font-size:0.75rem; color:{t['accent']};
-                            word-break:break-all;">
-                            🔗 {share_url}
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+def render_admin_tab(conn, t: dict) -> None:
+    """Onglet de création et gestion des formulaires.
 
-            with col_del:
-                st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-                if st.button("🗑️", key=f"del_{domain}", use_container_width=True,
-                             help="Supprimer ce formulaire"):
-                    try:
-                        delete_schema_db(conn, domain)
-                        st.success("Supprimé !")
+    Args:
+        conn: Connexion psycopg2.
+        t: Thème actif.
+    """
+    if not is_logged_in():
+        st.markdown(f"""
+        <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
+            border-radius:16px; padding:2rem; margin-bottom:1.5rem;">
+            <div style="font-size:1.2rem; font-weight:700; color:{t['text']}; margin-bottom:0.3rem;">
+                🔐 Connexion
+            </div>
+            <div style="color:{t['text_secondary']}; font-size:0.85rem;">
+                Connectez-vous pour créer et gérer vos formulaires.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        login_type = st.radio(
+            "Type de compte",
+            ["👑 Administrateur", "👤 Gestionnaire de formulaire"],
+            key="login_type_main",
+            horizontal=True,
+        )
+
+        if login_type == "👑 Administrateur":
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                pwd = st.text_input(
+                    "Mot de passe admin",
+                    type="password",
+                    key="admin_pwd_main",
+                    placeholder="Votre mot de passe administrateur"
+                )
+            with col2:
+                st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+                if st.button("→ Connexion", key="btn_admin_main", use_container_width=True):
+                    if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
+                        st.session_state.role = "admin"
+                        st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
                         st.rerun()
-                    except Exception as exc:
-                        st.error(f"❌ {exc}")
+                    else:
+                        st.error("❌ Mot de passe incorrect")
+        else:
+            st.markdown(f"""
+            <div style="color:{t['text_secondary']}; font-size:0.82rem; margin-bottom:0.5rem;">
+                Entrez le mot de passe choisi lors de la création de votre formulaire.
+            </div>
+            """, unsafe_allow_html=True)
+
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                pwd_input = st.text_input(
+                    "Mot de passe du formulaire",
+                    type="password",
+                    key="creator_pwd_main",
+                    placeholder="Mot de passe de votre formulaire"
+                )
+            with col2:
+                st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+                if st.button("→ Accéder", key="btn_creator_main", use_container_width=True):
+                    if not pwd_input.strip():
+                        st.error("❌ Mot de passe requis")
+                    else:
+                        all_schemas = load_schemas_db(conn)
+                        matched_creator = None
+                        for domain, schema in all_schemas.items():
+                            if verify_creator_password(conn, domain, pwd_input.strip()):
+                                matched_creator = schema.get("_creator_id", domain)
+                                break
+                        if matched_creator:
+                            st.session_state.role = "creator"
+                            st.session_state.user_id = matched_creator
+                            st.rerun()
+                        else:
+                            st.error("❌ Mot de passe incorrect")
+        return
+        
 def main() -> None:
     """Point d'entrée principal."""
     init_session()
