@@ -310,7 +310,7 @@ def fetch_all(conn, table_name: str) -> pd.DataFrame:
     except Exception as exc:
         logger.warning("fetch_all(%s) : %s", table_name, exc)
         return pd.DataFrame()
-        def track_session(conn) -> None:
+def track_session(conn) -> None:
     """Enregistre une session active.
 
     Args:
