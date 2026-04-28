@@ -310,3 +310,45 @@ def fetch_all(conn, table_name: str) -> pd.DataFrame:
     except Exception as exc:
         logger.warning("fetch_all(%s) : %s", table_name, exc)
         return pd.DataFrame()
+        def track_session(conn) -> None:
+    """Enregistre une session active.
+
+    Args:
+        conn: Connexion psycopg2 active.
+    """
+    try:
+        with transaction(conn) as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS _sessions (
+                    id SERIAL PRIMARY KEY,
+                    last_seen TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            cur.execute("INSERT INTO _sessions (last_seen) VALUES (NOW());")
+            cur.execute("""
+                DELETE FROM _sessions
+                WHERE last_seen < NOW() - INTERVAL '5 minutes';
+            """)
+    except Exception as exc:
+        logger.warning("track_session : %s", exc)
+
+
+def count_active_sessions(conn) -> int:
+    """Compte les sessions actives des 5 dernières minutes.
+
+    Args:
+        conn: Connexion psycopg2 active.
+
+    Returns:
+        Nombre d'utilisateurs actifs.
+    """
+    try:
+        with transaction(conn) as cur:
+            cur.execute("""
+                SELECT COUNT(*) as total FROM _sessions
+                WHERE last_seen > NOW() - INTERVAL '5 minutes';
+            """)
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    except Exception:
+        return 0
