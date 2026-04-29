@@ -807,6 +807,63 @@ def main() -> None:
     query_params = st.query_params
     url_study = query_params.get("study", None)
 
+    # BARRE DE NAVIGATION EN HAUT
+    nav_col1, nav_col2, nav_col3 = st.columns([4, 2, 2])
+    with nav_col1:
+        st.session_state.theme = st.selectbox(
+            "🎨 Thème",
+            list(THEMES.keys()),
+            index=list(THEMES.keys()).index(st.session_state.theme),
+            key="theme_select"
+        )
+        t = THEMES[st.session_state.theme]
+        apply_theme(t)
+
+    with nav_col2:
+        # Compteur utilisateurs en temps réel
+        try:
+            import psycopg2
+            with get_connection().cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS _sessions (
+                        id SERIAL PRIMARY KEY,
+                        last_seen TIMESTAMP DEFAULT NOW()
+                    );
+                """)
+                get_connection().commit()
+                cur.execute("INSERT INTO _sessions (last_seen) VALUES (NOW());")
+                get_connection().commit()
+                cur.execute("""
+                    DELETE FROM _sessions
+                    WHERE last_seen < NOW() - INTERVAL '5 minutes';
+                """)
+                get_connection().commit()
+                cur.execute("""
+                    SELECT COUNT(*) FROM _sessions
+                    WHERE last_seen > NOW() - INTERVAL '5 minutes';
+                """)
+                active = cur.fetchone()[0]
+        except Exception:
+            active = 0
+
+        st.markdown(f"""
+        <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
+            border-radius:10px; padding:0.6rem 1rem; text-align:center; margin-top:1.5rem;">
+            <div style="font-size:1.2rem; font-weight:800; color:{t['metric_value']};">
+                🟢 {active}
+            </div>
+            <div style="font-size:0.65rem; text-transform:uppercase;
+                color:{t['metric_label']}; letter-spacing:0.08em;">
+                Utilisateurs actifs
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with nav_col3:
+        st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+        if st.button("⚙️ Admin / Connexion", use_container_width=True):
+            st.session_state.show_admin = True
+
     # HEADER
     st.markdown(f"""
     <div style="background:{t['hero']}; border-radius:20px; padding:2.5rem 3rem;
@@ -835,18 +892,6 @@ def main() -> None:
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-    # SÉLECTEUR DE THÈME
-    theme_col, _ = st.columns([2, 6])
-    with theme_col:
-        st.session_state.theme = st.selectbox(
-            "🎨 Thème",
-            list(THEMES.keys()),
-            index=list(THEMES.keys()).index(st.session_state.theme),
-            key="theme_select"
-        )
-        t = THEMES[st.session_state.theme]
-        apply_theme(t)
 
     # RÉSOLUTION DU DOMAINE
     if url_study:
@@ -917,7 +962,7 @@ def main() -> None:
     except Exception as exc:
         st.error(f"❌ Erreur validation : {exc}")
         st.stop()
-  # ONGLET SAISIE
+    # ONGLET SAISIE
     with tab_form:
         st.markdown(f"""
         <div style="background:{domain_gradient}; border-radius:16px;
