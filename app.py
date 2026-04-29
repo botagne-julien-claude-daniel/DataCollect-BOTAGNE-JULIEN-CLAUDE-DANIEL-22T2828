@@ -15,7 +15,6 @@ import pandas as pd
 import streamlit as st
 
 from database import (
-    count_active_sessions,
     delete_schema_db,
     ensure_schemas_table,
     ensure_table,
@@ -26,7 +25,6 @@ from database import (
     load_schemas_db,
     load_schemas_for_user,
     save_schema_db,
-    track_session,
     verify_creator_password,
 )
 from models import build_model, validate_data
@@ -387,7 +385,8 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> N
                 unique_vals = df[name].dropna().unique().tolist()
                 if unique_vals:
                     with fcols[i]:
-                        sel = st.multiselect(label, unique_vals, default=unique_vals, key=f"filter_{name}")
+                        sel = st.multiselect(label, unique_vals, default=unique_vals,
+                                             key=f"filter_{name}")
                         if sel:
                             df_filtered = df_filtered[df_filtered[name].isin(sel)]
         st.caption(f"**{len(df_filtered)}** / **{len(df)}** réponses")
@@ -411,7 +410,8 @@ def render_statistics(df: pd.DataFrame, schema_fields: list[dict], t: dict) -> N
                 if not series.empty:
                     with dcols[i % 2]:
                         st.markdown(f"**{label}**")
-                        st.bar_chart(series.value_counts(bins=min(10, len(series.unique()))).sort_index())
+                        st.bar_chart(series.value_counts(
+                            bins=min(10, len(series.unique()))).sort_index())
                         ca, cb, cc = st.columns(3)
                         ca.metric("Moyenne", f"{series.mean():.2f}")
                         cb.metric("Médiane", f"{series.median():.2f}")
@@ -464,14 +464,17 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
     base_name = f"{domain}_{timestamp}"
     col1, col2 = st.columns(2)
     with col1:
-        st.download_button("⬇ CSV", data=df.to_csv(index=False).encode("utf-8-sig"),
-                           file_name=f"{base_name}.csv", mime="text/csv",
+        st.download_button("⬇ CSV",
+                           data=df.to_csv(index=False).encode("utf-8-sig"),
+                           file_name=f"{base_name}.csv",
+                           mime="text/csv",
                            use_container_width=True)
     with col2:
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
             df.to_excel(writer, index=False, sheet_name=domain[:31])
-        st.download_button("⬇ Excel", data=buffer.getvalue(),
+        st.download_button("⬇ Excel",
+                           data=buffer.getvalue(),
                            file_name=f"{base_name}.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            use_container_width=True)
@@ -521,67 +524,68 @@ def render_admin_tab(conn, t: dict) -> None:
         )
 
         if login_type == "👑 Administrateur":
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                pwd = st.text_input(
-                    "Mot de passe admin",
-                    type="password",
-                    key="admin_pwd_main",
-                    placeholder="Votre mot de passe administrateur"
-                )
-            with col2:
-                st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
-                if st.button("→ Connexion", key="btn_admin_main", use_container_width=True):
-                    if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
-                        st.session_state.role = "admin"
-                        st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
-                        st.rerun()
-                    else:
-                        st.error("❌ Mot de passe incorrect")
+            pwd = st.text_input(
+                "Mot de passe admin",
+                type="password",
+                key="admin_pwd_main",
+                placeholder="Votre mot de passe administrateur"
+            )
+            if st.button("→ Connexion Admin", key="btn_admin_main",
+                         use_container_width=True):
+                if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
+                    st.session_state.role = "admin"
+                    st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
+                    st.rerun()
+                else:
+                    st.error("❌ Mot de passe incorrect")
+
         else:
             st.markdown(f"""
             <div style="background:{t['secondary_bg']}; border-left:3px solid {t['accent']};
                 border-radius:0 8px 8px 0; padding:0.8rem 1rem; margin-bottom:1rem;
                 font-size:0.82rem; color:{t['text_secondary']};">
-                💡 Vous êtes prof, chercheur ou responsable d'une étude ?
-                Entrez le mot de passe que vous avez choisi lors de la création
-                de votre formulaire pour accéder à vos données.
-                <br><br>
-                Si vous n'avez pas encore de formulaire, entrez n'importe quel
-                mot de passe et créez-en un après connexion.
+                💡 <strong>Première visite ?</strong> Choisissez n'importe quel mot de passe
+                et entrez-le ci-dessous. Vous serez connecté immédiatement.<br><br>
+                <strong>Déjà un formulaire ?</strong> Entrez le même mot de passe
+                qu'à la création pour retrouver vos données.
             </div>
             """, unsafe_allow_html=True)
 
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                pwd_input = st.text_input(
-                    "Mot de passe de votre formulaire",
-                    type="password",
-                    key="creator_pwd_main",
-                    placeholder="Mot de passe choisi à la création"
-                )
-            with col2:
-                st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
-                if st.button("→ Accéder", key="btn_creator_main", use_container_width=True):
-                    if not pwd_input.strip():
-                        st.error("❌ Mot de passe requis")
+            pwd_input = st.text_input(
+                "Votre mot de passe",
+                type="password",
+                key="creator_pwd_main",
+                placeholder="Ex: monétude2025"
+            )
+            if st.button("→ Accéder à mon espace", key="btn_creator_main",
+                         use_container_width=True):
+                if not pwd_input.strip():
+                    st.error("❌ Entrez un mot de passe pour continuer")
+                else:
+                    # Chercher si ce mot de passe correspond à un formulaire existant
+                    all_schemas = load_schemas_db(conn)
+                    matched_creator = None
+                    for domain, schema in all_schemas.items():
+                        if verify_creator_password(conn, domain, pwd_input.strip()):
+                            matched_creator = schema.get("_creator_id", domain)
+                            break
+
+                    if matched_creator:
+                        # Formulaire existant trouvé avec ce mot de passe
+                        st.session_state.role = "creator"
+                        st.session_state.user_id = matched_creator
+                        st.success("✅ Connecté ! Retrouvez vos formulaires ci-dessous.")
+                        st.rerun()
                     else:
-                        all_schemas = load_schemas_db(conn)
-                        matched_creator = None
-                        for domain, schema in all_schemas.items():
-                            if verify_creator_password(conn, domain, pwd_input.strip()):
-                                matched_creator = schema.get("_creator_id", domain)
-                                break
-                        if matched_creator:
-                            st.session_state.role = "creator"
-                            st.session_state.user_id = matched_creator
-                            st.rerun()
-                        else:
-                            st.error("❌ Mot de passe incorrect")
+                        # Aucun formulaire — première connexion acceptée
+                        st.session_state.role = "creator"
+                        st.session_state.user_id = pwd_input.strip()
+                        st.success("✅ Espace créé ! Vous pouvez maintenant créer votre formulaire.")
+                        st.rerun()
         return
 
     # SI CONNECTÉ
-    role_label = " Administrateur" if is_admin() else f"👤 {st.session_state.user_id}"
+    role_label = "👑 Administrateur" if is_admin() else f"👤 {st.session_state.user_id}"
     col_info, col_logout = st.columns([3, 1])
     with col_info:
         st.markdown(f"""
@@ -600,6 +604,7 @@ def render_admin_tab(conn, t: dict) -> None:
             st.session_state.user_id = None
             st.rerun()
 
+    # CRÉATION DE FORMULAIRE
     st.markdown(f"""
     <div style="font-weight:700; color:{t['text']}; font-size:1.05rem;
         margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:2px solid {t['divider']};">
@@ -610,13 +615,18 @@ def render_admin_tab(conn, t: dict) -> None:
     col1, col2 = st.columns(2)
     with col1:
         form_title = st.text_input("📌 Titre *", placeholder="Ex : Bien-être étudiant 2025")
-        domain_name = st.text_input("🔑 Identifiant unique *", placeholder="Ex : bienetre_2025",
+        domain_name = st.text_input("🔑 Identifiant unique *",
+                                    placeholder="Ex : bienetre_2025",
                                     help="Lettres, chiffres, underscores uniquement")
     with col2:
-        form_description = st.text_area("📝 Description", placeholder="Objectif de l'étude...", height=100)
-        creator_pwd = st.text_input("🔒 Mot de passe du formulaire *", type="password",
-                                    placeholder="Pour accéder à vos données",
-                                    help="Notez ce mot de passe — il vous servira à vous reconnecter")
+        form_description = st.text_area("📝 Description",
+                                        placeholder="Objectif de l'étude...", height=100)
+        creator_pwd = st.text_input(
+            "🔒 Mot de passe du formulaire *",
+            type="password",
+            placeholder="Le même mot de passe que votre connexion",
+            help="Utilisez le même mot de passe que celui de votre connexion"
+        )
 
     nb_fields = st.number_input("Nombre de champs", min_value=1, max_value=20, value=3, step=1)
     fields = []
@@ -643,15 +653,17 @@ def render_admin_tab(conn, t: dict) -> None:
                 fh = st.text_input("Aide", placeholder="Optionnel", key=f"help_{i}")
                 fo, fmin, fmax = "", None, None
                 if ft == "Liste déroulante":
-                    fo = st.text_input("Options (virgules)", placeholder="Oui, Non", key=f"opt_{i}")
+                    fo = st.text_input("Options (virgules)",
+                                       placeholder="Oui, Non", key=f"opt_{i}")
                 elif ft in ("Nombre entier", "Nombre décimal"):
                     fmin = st.number_input("Min", value=0, key=f"min_{i}")
                     fmax = st.number_input("Max", value=100, key=f"max_{i}")
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-            type_map = {"Texte": "str", "Nombre entier": "int", "Nombre décimal": "float",
-                        "Date": "date", "Liste déroulante": "str"}
+            type_map = {"Texte": "str", "Nombre entier": "int",
+                        "Nombre décimal": "float", "Date": "date",
+                        "Liste déroulante": "str"}
             fd: dict[str, Any] = {
                 "name": fn.strip().replace(" ", "_"),
                 "label": fl.strip(),
@@ -714,6 +726,7 @@ def render_admin_tab(conn, t: dict) -> None:
             except Exception as exc:
                 st.error(f"❌ Erreur : {exc}")
 
+    # MES FORMULAIRES
     st.markdown(f"""
     <div style="font-weight:700; color:{t['text']}; font-size:1.05rem;
         margin:2rem 0 1rem; padding-bottom:0.5rem; border-bottom:2px solid {t['divider']};">
@@ -721,7 +734,8 @@ def render_admin_tab(conn, t: dict) -> None:
     </div>
     """, unsafe_allow_html=True)
 
-    schemas = load_schemas_db(conn) if is_admin() else load_schemas_for_user(conn, st.session_state.user_id)
+    schemas = load_schemas_db(conn) if is_admin() else load_schemas_for_user(
+        conn, st.session_state.user_id)
 
     if not schemas:
         st.info("Aucun formulaire pour l'instant. Créez-en un ci-dessus !")
@@ -783,8 +797,6 @@ def main() -> None:
     try:
         conn = get_connection()
         ensure_schemas_table(conn)
-        track_session(conn)
-        active_users = count_active_sessions(conn)
     except Exception as exc:
         st.error(f"❌ Erreur connexion : {exc}")
         st.stop()
@@ -819,12 +831,6 @@ def main() -> None:
             </div>
             <div style="color:rgba(255 255 255 / 0.7); font-size:0.85rem;">
                 Réalisé par Botagne Julien Claude Daniel · Moteur piloté par schéma
-            </div>
-            <div style="margin-top:1rem;">
-                <span style="background:rgba(255 255 255 / 0.15); color:white;
-                    padding:4px 14px; border-radius:20px; font-size:0.8rem; font-weight:600;">
-                    🟢 {active_users} utilisateur(s) actif(s) en ce moment
-                </span>
             </div>
         </div>
     </div>
@@ -911,8 +917,7 @@ def main() -> None:
     except Exception as exc:
         st.error(f"❌ Erreur validation : {exc}")
         st.stop()
-
-    # ONGLET SAISIE
+  # ONGLET SAISIE
     with tab_form:
         st.markdown(f"""
         <div style="background:{domain_gradient}; border-radius:16px;
@@ -963,7 +968,8 @@ def main() -> None:
                             raw_values[field["name"]] = render_field(field)
                         except Exception as exc:
                             st.warning(f"Champ `{field.get('name')}` : {exc}")
-            submitted = st.form_submit_button("✅ Soumettre ma réponse", use_container_width=True)
+            submitted = st.form_submit_button("✅ Soumettre ma réponse",
+                                              use_container_width=True)
 
         if submitted:
             try:
@@ -1034,4 +1040,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    
