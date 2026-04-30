@@ -15,7 +15,6 @@ import pandas as pd
 import streamlit as st
 
 from database import (
-from database import (
     delete_schema_db,
     ensure_schemas_table,
     ensure_table,
