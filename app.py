@@ -776,25 +776,7 @@ def render_admin_section(conn, t: dict) -> None:
                     <div style="padding-left:1rem;">
                         <div style="font-weight:700; color:{t['text']}; font-size:1.05rem;">
                             {schema.get('title', domain)}
-                        </div>
-                        <div style="color:{t['text_secondary']}; font-size:0.8rem; margin-top:0.2rem;">
-                            {schema.get('description', '') or 'Aucune description'}
-                        </div>
-                        <div style="margin-top:0.8rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-                            <span style="background:{t['tag_bg']}; color:{t['tag_text']};
-                                padding:2px 10px; border-radius:20px; font-size:0.72rem; font-weight:600;">
-                                {len(schema.get('fields', []))} champs
-                            </span>
-                            <span style="background:{t['tag_bg']}; color:{t['tag_text']};
-                                padding:2px 10px; border-radius:20px; font-size:0.72rem; font-weight:600;">
-                                👤 {creator}
-                            </span>
-                        </div>
-                        <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-                            border-radius:8px; padding:0.5rem 0.8rem; margin-top:0.8rem;
-                            font-family:monospace; font-size:0.75rem; color:{t['accent']};
-                            word-break:break-all;">
-                            🔗 {share_url}
+              
 def render_admin_section(conn, t: dict) -> None:
     """Section Admin : connexion + création + gestion."""
 
@@ -805,33 +787,35 @@ def render_admin_section(conn, t: dict) -> None:
 
         col_a, col_b = st.columns(2)
 
-        with col_a:
-            st.markdown(f"""
-            <div style="background:{t['card']}; border:2px solid {t['accent']};
-                border-radius:14px; padding:1.5rem;">
-                <div style="font-size:1.5rem;">👑</div>
-                <div style="font-weight:700; color:{t['text']}">
-                    Administrateur
-                </div>
-                <div style="font-size:0.8rem; color:{t['text_secondary']}">
-                    Accès total aux formulaires
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+with col_a:
+    st.markdown(f"""
+    <div style="background:{t['card']}; border:2px solid {t['accent']};
+        border-radius:14px; padding:1.5rem; margin-bottom:1rem;">
+        <div style="font-size:1.5rem; margin-bottom:0.5rem;">👑</div>
+        <div style="font-weight:700; color:{t['text']}; font-size:0.95rem;">
+            Administrateur
+        </div>
+        <div style="color:{t['text_secondary']}; font-size:0.78rem; margin-top:0.4rem;">
+            Réservé au créateur de l'application.<br>
+            Accès total à tous les formulaires.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        with col_b:
-            st.markdown(f"""
-            <div style="background:{t['card']}; border:1px solid {t['border']};
-                border-radius:14px; padding:1.5rem;">
-                <div style="font-size:1.5rem;">👤</div>
-                <div style="font-weight:700; color:{t['text']}">
-                    Gestionnaire de formulaire
-                </div>
-                <div style="font-size:0.8rem; color:{t['text_secondary']}">
-                    Création et gestion d'études
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+with col_b:
+    st.markdown(f"""
+    <div style="background:{t['card']}; border:1px solid {t['border']};
+        border-radius:14px; padding:1.5rem; margin-bottom:1rem;">
+        <div style="font-size:1.5rem; margin-bottom:0.5rem;">👤</div>
+        <div style="font-weight:700; color:{t['text']}; font-size:0.95rem;">
+            Gestionnaire de formulaire
+        </div>
+        <div style="color:{t['text_secondary']}; font-size:0.78rem; margin-top:0.4rem;">
+            Pour les profs, chercheurs ou toute personne<br>
+            qui veut créer et gérer sa propre étude.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
         login_type = st.radio(
             "Je suis :",
