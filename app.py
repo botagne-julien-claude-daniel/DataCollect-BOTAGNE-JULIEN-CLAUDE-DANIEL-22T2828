@@ -15,11 +15,11 @@ import pandas as pd
 import streamlit as st
 
 from database import (
+from database import (
     delete_schema_db,
     ensure_schemas_table,
     ensure_table,
     fetch_all,
-    get_active_users,
     get_connection,
     insert_row,
     load_schema_by_domain,
@@ -265,7 +265,8 @@ def get_active_users(conn) -> int:
         Nombre d'utilisateurs actifs.
     """
     try:
-        with conn.cursor() as cur:
+        import psycopg2.extras
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS _sessions (
                     id SERIAL PRIMARY KEY,
@@ -281,13 +282,14 @@ def get_active_users(conn) -> int:
             """)
             conn.commit()
             cur.execute("""
-                SELECT COUNT(*) FROM _sessions
+                SELECT COUNT(*) as total FROM _sessions
                 WHERE last_seen > NOW() - INTERVAL '5 minutes';
             """)
-            return cur.fetchone()[0]
+            conn.commit()
+            row = cur.fetchone()
+            return row["total"] if row else 0
     except Exception:
         return 0
-
 
 def init_session() -> None:
     """Initialise les variables de session."""
