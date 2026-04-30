@@ -19,6 +19,7 @@ from database import (
     ensure_schemas_table,
     ensure_table,
     fetch_all,
+    get_active_users,
     get_connection,
     insert_row,
     load_schema_by_domain,
@@ -815,6 +816,7 @@ def main() -> None:
     try:
         conn = get_connection()
         ensure_schemas_table(conn)
+        active_users = get_active_users(conn)
     except Exception as exc:
         st.error(f"❌ Erreur connexion : {exc}")
         st.stop()
