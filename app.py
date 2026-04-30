@@ -246,8 +246,6 @@ def apply_theme(t: dict) -> None:
     </style>
     """, unsafe_allow_html=True)
 
-
-def get_app_url() -> str:
 def get_app_url() -> str:
     """
     Retourne l'URL de base de l'application.
