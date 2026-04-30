@@ -248,21 +248,14 @@ def apply_theme(t: dict) -> None:
 
 
 def get_app_url() -> str:
-    """Retourne l'URL de base.
-
-    Returns:
-        URL string.
+def get_app_url() -> str:
     """
-    try:
-        url = st.get_option("browser.serverAddress") or "votre-app.streamlit.app"
-        port = st.get_option("browser.serverPort")
-        if port and port not in (80, 443):
-            return f"http://{url}:{port}"
-        return f"https://{url}"
-    except Exception:
-        return "https://votre-app.streamlit.app"
+    Retourne l'URL de base de l'application.
 
-
+    - En production (Streamlit Cloud) : utilise BASE_URL défini dans les secrets
+    - En local : fallback sur localhost
+    """
+    return st.secrets.get("BASE_URL", "http://localhost:8501")
 def get_active_users(conn) -> int:
     """Compte les utilisateurs actifs des 5 dernières minutes.
 
