@@ -18,15 +18,14 @@ import streamlit as st
 logger = logging.getLogger(__name__)
 
 
-@st.cache_resource
 def get_connection():
-    """Retourne une connexion PostgreSQL persistante.
+    """Retourne une connexion PostgreSQL fraîche à chaque appel.
 
     Returns:
         Connexion psycopg2 active.
     """
     url = st.secrets["DATABASE_URL"]
-    conn = psycopg2.connect(url)
+    conn = psycopg2.connect(url, connect_timeout=10)
     conn.autocommit = False
     return conn
 
@@ -61,7 +60,7 @@ _PG_TYPE_MAP: dict[str, str] = {
 
 
 def ensure_schemas_table(conn) -> None:
-    """Crée la table _schemas avec gestion des rôles.
+    """Crée la table _schemas si elle n'existe pas.
 
     Args:
         conn: Connexion psycopg2 active.
@@ -79,14 +78,15 @@ def ensure_schemas_table(conn) -> None:
     """
     with transaction(conn) as cur:
         cur.execute(ddl)
-        # Ajouter les colonnes si elles n'existent pas (migration)
         for col, definition in [
             ("creator_id", "TEXT NOT NULL DEFAULT 'anonymous'"),
             ("creator_password", "TEXT"),
             ("is_public", "BOOLEAN DEFAULT FALSE"),
         ]:
             try:
-                cur.execute(f"ALTER TABLE _schemas ADD COLUMN IF NOT EXISTS {col} {definition};")
+                cur.execute(
+                    f"ALTER TABLE _schemas ADD COLUMN IF NOT EXISTS {col} {definition};"
+                )
             except Exception:
                 pass
 
@@ -107,7 +107,7 @@ def save_schema_db(
         schema: Dictionnaire du schéma.
         creator_id: Identifiant du créateur.
         creator_password: Mot de passe du créateur.
-        is_public: Si True, visible par tous via lien.
+        is_public: Si True visible par tous.
     """
     schema_json = json.dumps(schema, ensure_ascii=False)
     sql = """
@@ -122,7 +122,7 @@ def save_schema_db(
 
 
 def load_schemas_db(conn) -> dict[str, dict]:
-    """Charge tous les schémas (vue admin complète).
+    """Charge tous les schémas depuis Supabase.
 
     Args:
         conn: Connexion psycopg2 active.
@@ -142,7 +142,6 @@ def load_schemas_db(conn) -> dict[str, dict]:
                 data = json.loads(row["schema_json"])
                 data["_creator_id"] = row["creator_id"]
                 data["_is_public"] = row["is_public"]
-                data["_created_at"] = str(row["created_at"])
                 result[row["domain"]] = data
             return result
     except Exception as exc:
@@ -151,11 +150,11 @@ def load_schemas_db(conn) -> dict[str, dict]:
 
 
 def load_schemas_for_user(conn, creator_id: str) -> dict[str, dict]:
-    """Charge les schémas visibles par un utilisateur donné.
+    """Charge les schémas d'un utilisateur donné.
 
     Args:
         conn: Connexion psycopg2 active.
-        creator_id: Identifiant de l'utilisateur connecté.
+        creator_id: Identifiant de l'utilisateur.
 
     Returns:
         Dictionnaire domain: schema.
@@ -163,9 +162,8 @@ def load_schemas_for_user(conn, creator_id: str) -> dict[str, dict]:
     try:
         with transaction(conn) as cur:
             cur.execute("""
-                SELECT domain, schema_json, creator_id, is_public, created_at
-                FROM _schemas
-                WHERE creator_id = %s
+                SELECT domain, schema_json, creator_id, is_public
+                FROM _schemas WHERE creator_id = %s
                 ORDER BY created_at DESC;
             """, (creator_id,))
             rows = cur.fetchall()
@@ -219,7 +217,7 @@ def verify_creator_password(conn, domain: str, password: str) -> bool:
         password: Mot de passe à vérifier.
 
     Returns:
-        True si le mot de passe est correct.
+        True si correct.
     """
     try:
         with transaction(conn) as cur:
@@ -310,31 +308,10 @@ def fetch_all(conn, table_name: str) -> pd.DataFrame:
     except Exception as exc:
         logger.warning("fetch_all(%s) : %s", table_name, exc)
         return pd.DataFrame()
-def track_session(conn) -> None:
-    """Enregistre une session active.
-
-    Args:
-        conn: Connexion psycopg2 active.
-    """
-    try:
-        with transaction(conn) as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS _sessions (
-                    id SERIAL PRIMARY KEY,
-                    last_seen TIMESTAMP DEFAULT NOW()
-                );
-            """)
-            cur.execute("INSERT INTO _sessions (last_seen) VALUES (NOW());")
-            cur.execute("""
-                DELETE FROM _sessions
-                WHERE last_seen < NOW() - INTERVAL '5 minutes';
-            """)
-    except Exception as exc:
-        logger.warning("track_session : %s", exc)
 
 
-def count_active_sessions(conn) -> int:
-    """Compte les sessions actives des 5 dernières minutes.
+def get_active_users(conn) -> int:
+    """Compte les utilisateurs actifs des 5 dernières minutes.
 
     Args:
         conn: Connexion psycopg2 active.
@@ -345,10 +322,25 @@ def count_active_sessions(conn) -> int:
     try:
         with transaction(conn) as cur:
             cur.execute("""
+                CREATE TABLE IF NOT EXISTS _sessions (
+                    id SERIAL PRIMARY KEY,
+                    last_seen TIMESTAMP DEFAULT NOW()
+                );
+            """)
+        with transaction(conn) as cur:
+            cur.execute("INSERT INTO _sessions (last_seen) VALUES (NOW());")
+        with transaction(conn) as cur:
+            cur.execute("""
+                DELETE FROM _sessions
+                WHERE last_seen < NOW() - INTERVAL '5 minutes';
+            """)
+        with transaction(conn) as cur:
+            cur.execute("""
                 SELECT COUNT(*) as total FROM _sessions
                 WHERE last_seen > NOW() - INTERVAL '5 minutes';
             """)
             row = cur.fetchone()
             return row["total"] if row else 0
-    except Exception:
+    except Exception as exc:
+        logger.warning("get_active_users : %s", exc)
         return 0
