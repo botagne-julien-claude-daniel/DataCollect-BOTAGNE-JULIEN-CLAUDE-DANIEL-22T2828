@@ -795,289 +795,459 @@ def render_admin_section(conn, t: dict) -> None:
                             font-family:monospace; font-size:0.75rem; color:{t['accent']};
                             word-break:break-all;">
                             🔗 {share_url}
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+def render_admin_section(conn, t: dict) -> None:
+    """Section Admin — connexion + création + gestion."""
 
-            with col_del:
-                st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-                if st.button("🗑️", key=f"del_{domain}", use_container_width=True,
-                             help="Supprimer ce formulaire"):
-                    try:
-                        delete_schema_db(conn, domain)
-                        st.success("Supprimé !")
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(f"❌ {exc}")
+    # =========================================================
+    # 1. NON CONNECTÉ
+    # =========================================================
+    if not is_logged_in():
+
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.markdown(f"""
+            <div style="background:{t['card']}; border:2px solid {t['accent']};
+                border-radius:14px; padding:1.5rem;">
+                <div style="font-size:1.5rem;">👑</div>
+                <div style="font-weight:700; color:{t['text']}">
+                    Administrateur
+                </div>
+                <div style="font-size:0.8rem; color:{t['text_secondary']}">
+                    Accès total aux formulaires
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_b:
+            st.markdown(f"""
+            <div style="background:{t['card']}; border:1px solid {t['border']};
+                border-radius:14px; padding:1.5rem;">
+                <div style="font-size:1.5rem;">👤</div>
+                <div style="font-weight:700; color:{t['text']}">
+                    Gestionnaire de formulaire
+                </div>
+                <div style="font-size:0.8rem; color:{t['text_secondary']}">
+                    Création et gestion d'études
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        login_type = st.radio(
+            "Je suis :",
+            ["👑 Administrateur", "👤 Gestionnaire de formulaire"],
+            key="login_type_main",
+            horizontal=True
+        )
+
+        # =====================================================
+        # ADMIN LOGIN
+        # =====================================================
+        if login_type == "👑 Administrateur":
+
+            pwd = st.text_input(
+                "Mot de passe admin",
+                type="password",
+                key="admin_pwd_main"
+            )
+
+            if st.button("Connexion Admin", key="btn_admin_main"):
+
+                if pwd == st.secrets.get("ADMIN_PASSWORD", ""):
+                    st.session_state.role = "admin"
+                    st.session_state.user_id = st.secrets.get("ADMIN_ID", "admin")
+                    st.rerun()
+                else:
+                    st.error("❌ Mot de passe incorrect")
+
+        # =====================================================
+        # CREATOR LOGIN
+        # =====================================================
+        else:
+
+            pwd_input = st.text_input(
+                "Mot de passe",
+                type="password",
+                key="creator_pwd_main"
+            )
+
+            if st.button("Accéder", key="btn_creator_main"):
+
+                if not pwd_input.strip():
+                    st.error("❌ Mot de passe requis")
+                    return
+
+                schemas = load_schemas_db(conn)
+                matched_creator = None
+
+                for domain, schema in schemas.items():
+                    if verify_creator_password(conn, domain, pwd_input.strip()):
+                        matched_creator = schema.get("_creator_id", domain)
+                        break
+
+                st.session_state.role = "creator"
+                st.session_state.user_id = matched_creator or pwd_input.strip()
+                st.rerun()
+
+        return
+
+    # =========================================================
+    # 2. CONNECTÉ
+    # =========================================================
+    role_label = (
+        "👑 Administrateur"
+        if is_admin()
+        else f"👤 {st.session_state.user_id}"
+    )
+
+    col_info, col_logout = st.columns([3, 1])
+
+    with col_info:
+        st.markdown(f"""
+        <div style="background:{t['secondary_bg']};
+            border:1px solid {t['border']};
+            border-radius:12px; padding:1rem;">
+            <div style="font-size:0.7rem; color:{t['text_secondary']}">
+                Connecté en tant que
+            </div>
+            <div style="font-weight:700; color:{t['text']}">
+                {role_label}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_logout:
+        if st.button("🚪 Déconnexion", key="btn_logout_main"):
+            st.session_state.role = "participant"
+            st.session_state.user_id = None
+            st.rerun()
+
+    # =========================================================
+    # 3. CRÉATION FORMULAIRE
+    # =========================================================
+    st.markdown("## 🚀 Créer un formulaire")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        form_title = st.text_input("Titre *")
+        domain_name = st.text_input("Identifiant *")
+
+    with col2:
+        form_description = st.text_area("Description")
+        creator_pwd = st.text_input("Mot de passe formulaire *", type="password")
+
+    nb_fields = st.number_input("Nombre de champs", 1, 20, 3)
+    fields = []
+
+    # =========================================================
+    # 4. CONSTRUCTION CHAMPS
+    # =========================================================
+    for i in range(int(nb_fields)):
+
+        st.markdown(f"### Champ {i+1}")
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            label = st.text_input("Libellé", key=f"label_{i}")
+            name = st.text_input("Nom interne", key=f"name_{i}")
+
+        with c2:
+            ftype = st.selectbox(
+                "Type",
+                ["Texte", "Nombre entier", "Nombre décimal", "Date", "Liste"],
+                key=f"type_{i}"
+            )
+            required = st.checkbox("Obligatoire", True, key=f"req_{i}")
+
+        with c3:
+            help_text = st.text_input("Aide", key=f"help_{i}")
+
+        fields.append({
+            "name": name.strip(),
+            "label": label.strip(),
+            "type": ftype,
+            "required": required,
+            "help": help_text
+        })
+
+    # =========================================================
+    # 5. CRÉATION
+    # =========================================================
+    if st.button("🚀 Créer formulaire"):
+
+        errors = []
+
+        if not form_title:
+            errors.append("Titre requis")
+
+        if not domain_name:
+            errors.append("Identifiant requis")
+
+        for i, f in enumerate(fields):
+            if not f["name"] or not f["label"]:
+                errors.append(f"Champ {i+1} incomplet")
+
+        if errors:
+            for e in errors:
+                st.error(e)
+            return
+
+        schema = {
+            "title": form_title,
+            "description": form_description,
+            "fields": fields
+        }
+
+        try:
+            save_schema_db(
+                conn,
+                domain_name,
+                schema,
+                creator_id=st.session_state.user_id,
+                creator_password=creator_pwd,
+                is_public=False
+            )
+
+            st.success("✅ Formulaire créé avec succès")
+            st.rerun()
+
+        except Exception as exc:
+            st.error(f"❌ Erreur : {exc}")
+
+    # =========================================================
+    # 6. LISTE FORMULAIRES
+    # =========================================================
+    st.markdown("## 📁 Mes formulaires")
+
+    schemas = (
+        load_schemas_db(conn)
+        if is_admin()
+        else load_schemas_for_user(conn, st.session_state.user_id)
+    )
+
+    if not schemas:
+        st.info("Aucun formulaire")
+        return
+
+    for domain, schema in schemas.items():
+
+        col1, col2 = st.columns([4, 1])
+
+        with col1:
+            st.markdown(f"""
+            <div style="background:{t['card']};
+                border:1px solid {t['border']};
+                border-radius:12px; padding:1rem;">
+                <b>{schema.get('title', domain)}</b><br>
+                <small>{schema.get('description','')}</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col2:
+            if st.button("🗑️", key=f"del_{domain}"):
+                try:
+                    delete_schema_db(conn, domain)
+                    st.rerun()
+                except Exception as exc:
+                    st.error(str(exc))
 def main() -> None:
-    """Point d'entrée principal."""
+    """Point d'entrée principal de l'application."""
+
+    # =========================================================
+    # 1. INITIALISATION
+    # =========================================================
     init_session()
 
     try:
         conn = get_connection()
         ensure_schemas_table(conn)
-        active_users = get_active_users(conn)
     except Exception as exc:
-        st.error(f"❌ Erreur connexion : {exc}")
+        st.error(f"❌ Erreur connexion DB : {exc}")
         st.stop()
 
-    t = THEMES[st.session_state.theme]
+    # =========================================================
+    # 2. THEME
+    # =========================================================
+    t = THEMES.get(st.session_state.theme, THEMES[list(THEMES.keys())[0]])
     apply_theme(t)
 
-    query_params = st.query_params
-    url_study = query_params.get("study", None)
+    # =========================================================
+    # 3. URL PARAM
+    # =========================================================
+    url_study = st.query_params.get("study", None)
 
-    # COMPTEUR UTILISATEURS ACTIFS
+    # =========================================================
+    # 4. HEADER
+    # =========================================================
     active_users = get_active_users(conn)
 
-    # HEADER avec compteur intégré
     st.markdown(f"""
-    <div style="background:{t['hero']}; border-radius:20px; padding:2rem 2.5rem;
-        margin-bottom:1.5rem; position:relative; overflow:hidden;">
-        <div style="position:absolute; top:-40px; right:-40px; width:200px; height:200px;
-            background:rgba(255 255 255 / 0.06); border-radius:50%;"></div>
-        <div style="position:relative; display:flex; justify-content:space-between;
-            align-items:flex-start; flex-wrap:wrap; gap:1rem;">
-            <div>
-                <div style="font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase;
-                    color:rgba(255 255 255 / 0.6); margin-bottom:0.4rem;">
-                    Plateforme de collecte de données
-                </div>
-                <div style="font-family:'Playfair Display',serif; font-size:2rem;
-                    font-weight:800; color:white; line-height:1.1; margin-bottom:0.4rem;">
-                    DataCollect
-                    <span style="display:inline-block; background:rgba(255 255 255 / 0.2);
-                        color:white; font-size:0.55rem; font-weight:600; padding:3px 10px;
-                        border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
-                        vertical-align:middle; margin-left:8px;
-                        border:1px solid rgba(255 255 255 / 0.3);">Universal</span>
-                </div>
-                <div style="color:rgba(255 255 255 / 0.7); font-size:0.8rem;">
-                    Réalisé par Botagne Julien Claude Daniel
-                </div>
-            </div>
-            <div style="background:rgba(255 255 255 / 0.15); border-radius:14px;
-                padding:1rem 1.5rem; text-align:center; min-width:120px;">
-                <div style="font-size:2rem; font-weight:800; color:white;">
-                    🟢 {active_users}
-                </div>
-                <div style="font-size:0.65rem; text-transform:uppercase;
-                    color:rgba(255 255 255 / 0.7); letter-spacing:0.08em; margin-top:4px;">
-                    Actifs maintenant
-                </div>
-            </div>
+    <div style="background:{t['hero']}; padding:2rem; border-radius:20px;">
+        <div style="color:white; font-size:2rem; font-weight:800;">
+            DataCollect
+        </div>
+        <div style="color:white;">
+            🟢 Utilisateurs actifs : {active_users}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # SÉLECTEUR DE THÈME
-    theme_col, _ = st.columns([2, 6])
-    with theme_col:
-        st.session_state.theme = st.selectbox(
-            "🎨 Thème",
-            list(THEMES.keys()),
-            index=list(THEMES.keys()).index(st.session_state.theme),
-            key="theme_select"
-        )
-        t = THEMES[st.session_state.theme]
-        apply_theme(t)
+    # =========================================================
+    # 5. THEME SELECT
+    # =========================================================
+    st.session_state.theme = st.selectbox(
+        "🎨 Thème",
+        list(THEMES.keys()),
+        index=list(THEMES.keys()).index(st.session_state.theme)
+    )
 
-    st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+    t = THEMES[st.session_state.theme]
+    apply_theme(t)
 
-    # SECTION ADMIN — toujours visible sur la page
+    # =========================================================
+    # 6. ADMIN SECTION
+    # =========================================================
     render_admin_section(conn, t)
 
-    st.markdown(f"""
-    <hr style="border:none; border-top:2px solid {t['divider']}; margin:2rem 0;">
-    """, unsafe_allow_html=True)
+    st.markdown("---")
 
-    # RÉSOLUTION DU DOMAINE
+    # =========================================================
+    # 7. RESOLUTION DU FORMULAIRE
+    # =========================================================
+    schema = None
+    domain = None
+
     if url_study:
         schema = load_schema_by_domain(conn, url_study)
-        if schema:
-            domain = url_study
-        else:
-            st.error("❌ Formulaire introuvable. Le lien est invalide.")
-            st.stop()
+        domain = url_study
+
     elif is_logged_in():
-        all_schemas = load_schemas_db(conn) if is_admin() else load_schemas_for_user(
-            conn, st.session_state.user_id)
-        available = list(all_schemas.keys())
-        if available:
-            selected = st.selectbox(
+        all_schemas = (
+            load_schemas_db(conn)
+            if is_admin()
+            else load_schemas_for_user(conn, st.session_state.user_id)
+        )
+
+        if all_schemas:
+            domain = st.selectbox(
                 "📋 Sélectionner un formulaire",
-                available,
+                list(all_schemas.keys()),
                 format_func=lambda x: all_schemas[x].get("title", x)
             )
-            domain = selected
             schema = all_schemas.get(domain)
-        else:
-            domain = None
-            schema = None
-    else:
-        all_schemas = {}
-        domain = None
-        schema = None
 
-    # ONGLETS SAISIE / DONNÉES / STATS
-    tab_form, tab_data, tab_stats = st.tabs([
-        "✏️  Saisie", "📋  Données", "📊  Statistiques"
-    ])
-
+    # =========================================================
+    # 8. SI AUCUN FORMULAIRE
+    # =========================================================
     if not schema:
-        with tab_form:
-            st.markdown(f"""
-            <div style="background:{t['card']}; border:1px solid {t['border']};
-                border-radius:16px; padding:3rem; text-align:center; margin-top:1rem;">
-                <div style="font-size:3rem;">📋</div>
-                <div style="font-size:1.1rem; font-weight:600;
-                    color:{t['text_secondary']}; margin-top:1rem;">
-                    {"Connectez-vous ci-dessus pour créer un formulaire"
-                     if not is_logged_in()
-                     else "Sélectionnez ou créez un formulaire ci-dessus"}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        st.info("📌 Aucun formulaire sélectionné ou accessible.")
         return
 
-    schema_fields: list[dict] = schema.get("fields", [])
-    form_title: str = schema.get("title", domain.replace("_", " ").title())
-    form_description: str = schema.get("description", "")
+    # =========================================================
+    # 9. PREPARATION SCHEMA
+    # =========================================================
+    schema_fields = schema.get("fields", [])
+    form_title = schema.get("title", domain)
+    form_description = schema.get("description", "")
     domain_gradient = get_domain_gradient(domain)
     share_url = f"{get_app_url()}/?study={domain}"
 
+    # =========================================================
+    # 10. TABLE DB
+    # =========================================================
     try:
         ensure_table(conn, domain, schema_fields)
     except Exception as exc:
-        st.error(f"❌ Erreur base de données : {exc}")
+        st.error(f"❌ Erreur table DB : {exc}")
         st.stop()
 
+    # =========================================================
+    # 11. MODEL VALIDATION
+    # =========================================================
     try:
         model_cls = build_model(schema_fields)
     except Exception as exc:
-        st.error(f"❌ Erreur validation : {exc}")
+        st.error(f"❌ Erreur modèle : {exc}")
         st.stop()
-    # ONGLET SAISIE
-    with tab_form:
-        st.markdown(f"""
-        <div style="background:{domain_gradient}; border-radius:16px;
-            padding:2rem 2.5rem; margin-bottom:1.5rem; position:relative; overflow:hidden;">
-            <div style="position:absolute; top:-30px; right:-30px; width:160px; height:160px;
-                background:rgba(255 255 255 / 0.07); border-radius:50%;"></div>
-            <div style="position:relative;">
-                <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
-                    color:rgba(255 255 255 / 0.6); margin-bottom:0.4rem;">📋 Formulaire</div>
-                <div style="font-family:'Playfair Display',serif; font-size:1.8rem;
-                    font-weight:700; color:white; margin-bottom:0.4rem;">{form_title}</div>
-                <div style="color:rgba(255 255 255 / 0.8); font-size:0.85rem;">
-                    {form_description or 'Remplissez le formulaire ci-dessous.'}
-                </div>
-                <div style="margin-top:1rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
-                    <span style="background:rgba(255 255 255 / 0.2); color:white;
-                        padding:3px 12px; border-radius:20px; font-size:0.72rem;">
-                        {len(schema_fields)} champs
-                    </span>
-                    <span style="background:rgba(255 255 255 / 0.2); color:white;
-                        padding:3px 12px; border-radius:20px; font-size:0.72rem;">
-                        🔒 Données permanentes
-                    </span>
-                </div>
-            </div>
-        </div>
 
-        <div style="background:{t['secondary_bg']}; border:1.5px solid {t['border']};
-            border-radius:12px; padding:1.2rem 1.5rem; margin-bottom:1.5rem;">
-            <div style="font-weight:600; color:{t['accent']}; font-size:0.85rem;
-                margin-bottom:0.4rem;">🔗 Partager cette étude</div>
-            <div style="background:{t['card']}; border:1px solid {t['border']};
-                border-radius:8px; padding:0.7rem 1rem; font-family:monospace;
-                font-size:0.78rem; color:{t['accent']}; word-break:break-all;">
-                {share_url}
-            </div>
+    # =========================================================
+    # 12. TABS
+    # =========================================================
+    tab_form, tab_data, tab_stats = st.tabs([
+        "✏️ Saisie", "📋 Données", "📊 Statistiques"
+    ])
+
+    # =========================================================
+    # 13. TAB FORMULAIRE
+    # =========================================================
+    with tab_form:
+
+        st.markdown(f"""
+        <div style="background:{domain_gradient}; padding:2rem; border-radius:16px;">
+            <h2 style="color:white;">{form_title}</h2>
+            <p style="color:white;">{form_description}</p>
         </div>
         """, unsafe_allow_html=True)
 
+        st.markdown(f"🔗 {share_url}")
+
         with st.form(key=f"form_{domain}", clear_on_submit=True):
-            raw_values: dict[str, Any] = {}
-            field_chunks = [schema_fields[i:i+2] for i in range(0, len(schema_fields), 2)]
-            for chunk in field_chunks:
-                cols = st.columns(len(chunk))
-                for j, field in enumerate(chunk):
-                    with cols[j]:
-                        try:
-                            raw_values[field["name"]] = render_field(field)
-                        except Exception as exc:
-                            st.warning(f"Champ `{field.get('name')}` : {exc}")
-            submitted = st.form_submit_button("✅ Soumettre ma réponse",
-                                              use_container_width=True)
+
+            raw_values = {}
+
+            for field in schema_fields:
+                raw_values[field["name"]] = render_field(field)
+
+            submitted = st.form_submit_button("Soumettre")
 
         if submitted:
+
             try:
                 instance, errors = validate_data(model_cls, raw_values)
+
                 if errors:
-                    st.error("❌ Corrigez les erreurs :")
-                    for err in errors:
-                        st.markdown(f"• {err}")
+                    for e in errors:
+                        st.error(e)
                 else:
                     row_id = insert_row(conn, domain, instance.model_dump())
-                    st.success(f"✅ Réponse #{row_id} enregistrée ! Merci.")
+                    st.success(f"✅ Réponse enregistrée #{row_id}")
                     st.balloons()
+
             except Exception as exc:
                 st.error(f"❌ Erreur : {exc}")
-                with st.expander("Détails"):
-                    st.code(traceback.format_exc())
 
-    # ONGLET DONNÉES
+    # =========================================================
+    # 14. TAB DONNEES
+    # =========================================================
     with tab_data:
-        domain_creator = schema.get("_creator_id", "")
-        can_access = is_admin() or st.session_state.user_id == domain_creator
-        if not can_access:
-            st.warning("🔐 Accès réservé au créateur et à l'administrateur.")
+
+        if not is_admin() and st.session_state.user_id != schema.get("_creator_id"):
+            st.warning("🔐 Accès restreint")
         else:
-            try:
-                df = fetch_all(conn, domain)
-            except Exception as exc:
-                st.error(f"Erreur : {exc}")
-                df = pd.DataFrame()
+            df = fetch_all(conn, domain)
 
             if df.empty:
-                st.info("📭 Aucune donnée collectée pour l'instant.")
+                st.info("Aucune donnée")
             else:
-                st.markdown(f"""
-                <span style="background:{t['tag_bg']}; color:{t['tag_text']};
-                    padding:4px 14px; border-radius:20px; font-weight:600; font-size:0.85rem;">
-                    {len(df)} réponse(s)
-                </span>
-                """, unsafe_allow_html=True)
-                st.markdown("<div style='height:0.8rem'></div>", unsafe_allow_html=True)
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.dataframe(df, use_container_width=True)
                 export_dataframe(df, domain)
 
-    # ONGLET STATISTIQUES
+    # =========================================================
+    # 15. TAB STATS
+    # =========================================================
     with tab_stats:
-        domain_creator = schema.get("_creator_id", "")
-        can_access = is_admin() or st.session_state.user_id == domain_creator
-        if not can_access:
-            st.warning("🔐 Accès réservé au créateur et à l'administrateur.")
+
+        if not is_admin() and st.session_state.user_id != schema.get("_creator_id"):
+            st.warning("🔐 Accès restreint")
         else:
-            st.markdown(f"""
-            <div style="background:{domain_gradient}; border-radius:14px;
-                padding:1.5rem 2rem; margin-bottom:1.5rem;">
-                <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
-                    color:rgba(255 255 255 / 0.6); margin-bottom:0.3rem;">
-                    📊 Tableau de bord analytique
-                </div>
-                <div style="font-family:'Playfair Display',serif; font-size:1.4rem;
-                    font-weight:700; color:white;">{form_title}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            try:
-                df_stats = fetch_all(conn, domain)
-                render_statistics(df_stats, schema_fields, t)
-            except Exception as exc:
-                st.error(f"❌ Erreur : {exc}")
+            df_stats = fetch_all(conn, domain)
+            render_statistics(df_stats, schema_fields, t)
 
 
+# =========================================================
+# ENTRY POINT
+# =========================================================
 if __name__ == "__main__":
     main()
