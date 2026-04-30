@@ -796,7 +796,7 @@ def render_admin_section(conn, t: dict) -> None:
                             word-break:break-all;">
                             🔗 {share_url}
 def render_admin_section(conn, t: dict) -> None:
-    """Section Admin — connexion + création + gestion."""
+    """Section Admin : connexion + création + gestion."""
 
     # =========================================================
     # 1. NON CONNECTÉ
