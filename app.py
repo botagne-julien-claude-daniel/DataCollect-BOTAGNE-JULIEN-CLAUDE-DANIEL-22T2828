@@ -263,6 +263,40 @@ def get_app_url() -> str:
         return "https://votre-app.streamlit.app"
 
 
+def get_active_users(conn) -> int:
+    """Compte les utilisateurs actifs des 5 dernières minutes.
+
+    Args:
+        conn: Connexion psycopg2 active.
+
+    Returns:
+        Nombre d'utilisateurs actifs.
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS _sessions (
+                    id SERIAL PRIMARY KEY,
+                    last_seen TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            conn.commit()
+            cur.execute("INSERT INTO _sessions (last_seen) VALUES (NOW());")
+            conn.commit()
+            cur.execute("""
+                DELETE FROM _sessions
+                WHERE last_seen < NOW() - INTERVAL '5 minutes';
+            """)
+            conn.commit()
+            cur.execute("""
+                SELECT COUNT(*) FROM _sessions
+                WHERE last_seen > NOW() - INTERVAL '5 minutes';
+            """)
+            return cur.fetchone()[0]
+    except Exception:
+        return 0
+
+
 def init_session() -> None:
     """Initialise les variables de session."""
     if "role" not in st.session_state:
@@ -481,7 +515,7 @@ def export_dataframe(df: pd.DataFrame, domain: str) -> None:
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            use_container_width=True)
 def render_admin_section(conn, t: dict) -> None:
-    """Section Admin complète — connexion + création + gestion.
+    """Section Admin — connexion + création + gestion.
 
     Args:
         conn: Connexion psycopg2.
@@ -545,8 +579,8 @@ def render_admin_section(conn, t: dict) -> None:
             <div style="background:{t['secondary_bg']}; border-left:3px solid {t['accent']};
                 border-radius:0 8px 8px 0; padding:0.8rem 1rem; margin-bottom:1rem;
                 font-size:0.82rem; color:{t['text_secondary']};">
-                💡 <strong>Première visite ?</strong> Choisissez n'importe quel mot de passe
-                et entrez-le ci-dessous. Vous serez connecté immédiatement.<br><br>
+                💡 <strong>Première visite ?</strong> Choisissez n'importe quel mot de passe.
+                Vous serez connecté immédiatement.<br><br>
                 <strong>Déjà un formulaire ?</strong> Entrez le même mot de passe
                 qu'à la création pour retrouver vos données.
             </div>
@@ -800,36 +834,52 @@ def main() -> None:
     query_params = st.query_params
     url_study = query_params.get("study", None)
 
-    # HEADER
+    # COMPTEUR UTILISATEURS ACTIFS
+    active_users = get_active_users(conn)
+
+    # HEADER avec compteur intégré
     st.markdown(f"""
     <div style="background:{t['hero']}; border-radius:20px; padding:2rem 2.5rem;
         margin-bottom:1.5rem; position:relative; overflow:hidden;">
         <div style="position:absolute; top:-40px; right:-40px; width:200px; height:200px;
             background:rgba(255 255 255 / 0.06); border-radius:50%;"></div>
-        <div style="position:relative;">
-            <div style="font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase;
-                color:rgba(255 255 255 / 0.6); margin-bottom:0.4rem;">
-                Plateforme de collecte de données
+        <div style="position:relative; display:flex; justify-content:space-between;
+            align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <div style="font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase;
+                    color:rgba(255 255 255 / 0.6); margin-bottom:0.4rem;">
+                    Plateforme de collecte de données
+                </div>
+                <div style="font-family:'Playfair Display',serif; font-size:2rem;
+                    font-weight:800; color:white; line-height:1.1; margin-bottom:0.4rem;">
+                    DataCollect
+                    <span style="display:inline-block; background:rgba(255 255 255 / 0.2);
+                        color:white; font-size:0.55rem; font-weight:600; padding:3px 10px;
+                        border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
+                        vertical-align:middle; margin-left:8px;
+                        border:1px solid rgba(255 255 255 / 0.3);">Universal</span>
+                </div>
+                <div style="color:rgba(255 255 255 / 0.7); font-size:0.8rem;">
+                    Réalisé par Botagne Julien Claude Daniel
+                </div>
             </div>
-            <div style="font-family:'Playfair Display',serif; font-size:2rem;
-                font-weight:800; color:white; line-height:1.1; margin-bottom:0.4rem;">
-                DataCollect
-                <span style="display:inline-block; background:rgba(255 255 255 / 0.2);
-                    color:white; font-size:0.55rem; font-weight:600; padding:3px 10px;
-                    border-radius:20px; letter-spacing:0.1em; text-transform:uppercase;
-                    vertical-align:middle; margin-left:8px;
-                    border:1px solid rgba(255 255 255 / 0.3);">Universal</span>
-            </div>
-            <div style="color:rgba(255 255 255 / 0.7); font-size:0.8rem;">
-                Réalisé par Botagne Julien Claude Daniel
+            <div style="background:rgba(255 255 255 / 0.15); border-radius:14px;
+                padding:1rem 1.5rem; text-align:center; min-width:120px;">
+                <div style="font-size:2rem; font-weight:800; color:white;">
+                    🟢 {active_users}
+                </div>
+                <div style="font-size:0.65rem; text-transform:uppercase;
+                    color:rgba(255 255 255 / 0.7); letter-spacing:0.08em; margin-top:4px;">
+                    Actifs maintenant
+                </div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # BARRE DE NAVIGATION — thème + compteur + onglet Admin visible
-    nav1, nav2, nav3 = st.columns([3, 2, 2])
-    with nav1:
+    # SÉLECTEUR DE THÈME
+    theme_col, _ = st.columns([2, 6])
+    with theme_col:
         st.session_state.theme = st.selectbox(
             "🎨 Thème",
             list(THEMES.keys()),
@@ -839,56 +889,14 @@ def main() -> None:
         t = THEMES[st.session_state.theme]
         apply_theme(t)
 
-    with nav2:
-        # Compteur utilisateurs actifs
-        try:
-            conn2 = get_connection()
-            with conn2.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS _sessions (
-                        id SERIAL PRIMARY KEY,
-                        last_seen TIMESTAMP DEFAULT NOW()
-                    );
-                """)
-                conn2.commit()
-                cur.execute("INSERT INTO _sessions (last_seen) VALUES (NOW());")
-                conn2.commit()
-                cur.execute("DELETE FROM _sessions WHERE last_seen < NOW() - INTERVAL '5 minutes';")
-                conn2.commit()
-                cur.execute("SELECT COUNT(*) FROM _sessions WHERE last_seen > NOW() - INTERVAL '5 minutes';")
-                active = cur.fetchone()[0]
-        except Exception:
-            active = 0
+    st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div style="background:{t['secondary_bg']}; border:1px solid {t['border']};
-            border-radius:10px; padding:0.6rem 1rem; text-align:center; margin-top:1.5rem;">
-            <div style="font-size:1.3rem; font-weight:800; color:{t['metric_value']};">
-                🟢 {active}
-            </div>
-            <div style="font-size:0.65rem; text-transform:uppercase;
-                color:{t['metric_label']}; letter-spacing:0.06em;">
-                Actifs maintenant
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    # SECTION ADMIN — toujours visible sur la page
+    render_admin_section(conn, t)
 
-    with nav3:
-        st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
-        role_btn = "👑 Admin connecté" if is_admin() else (
-            f"👤 {st.session_state.user_id}" if is_logged_in() else "⚙️ Admin / Connexion"
-        )
-        if st.button(role_btn, key="nav_admin_btn", use_container_width=True):
-            st.session_state.go_admin = True
-
-    # ONGLETS PRINCIPAUX
-    tab_admin, tab_form, tab_data, tab_stats = st.tabs([
-        "⚙️  Admin", "✏️  Saisie", "📋  Données", "📊  Statistiques"
-    ])
-
-    # ONGLET ADMIN EN PREMIER — toujours visible
-    with tab_admin:
-        render_admin_section(conn, t)
+    st.markdown(f"""
+    <hr style="border:none; border-top:2px solid {t['divider']}; margin:2rem 0;">
+    """, unsafe_allow_html=True)
 
     # RÉSOLUTION DU DOMAINE
     if url_study:
@@ -903,12 +911,11 @@ def main() -> None:
             conn, st.session_state.user_id)
         available = list(all_schemas.keys())
         if available:
-            with tab_form:
-                selected = st.selectbox(
-                    "📋 Sélectionner un formulaire",
-                    available,
-                    format_func=lambda x: all_schemas[x].get("title", x)
-                )
+            selected = st.selectbox(
+                "📋 Sélectionner un formulaire",
+                available,
+                format_func=lambda x: all_schemas[x].get("title", x)
+            )
             domain = selected
             schema = all_schemas.get(domain)
         else:
@@ -919,6 +926,11 @@ def main() -> None:
         domain = None
         schema = None
 
+    # ONGLETS SAISIE / DONNÉES / STATS
+    tab_form, tab_data, tab_stats = st.tabs([
+        "✏️  Saisie", "📋  Données", "📊  Statistiques"
+    ])
+
     if not schema:
         with tab_form:
             st.markdown(f"""
@@ -927,9 +939,9 @@ def main() -> None:
                 <div style="font-size:3rem;">📋</div>
                 <div style="font-size:1.1rem; font-weight:600;
                     color:{t['text_secondary']}; margin-top:1rem;">
-                    {"Connectez-vous dans l'onglet Admin pour créer un formulaire"
+                    {"Connectez-vous ci-dessus pour créer un formulaire"
                      if not is_logged_in()
-                     else "Sélectionnez ou créez un formulaire dans l'onglet Admin"}
+                     else "Sélectionnez ou créez un formulaire ci-dessus"}
                 </div>
             </div>
             """, unsafe_allow_html=True)
